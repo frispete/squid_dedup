@@ -1,0 +1,266 @@
+#
+# this file was automatically generated based on
+# http://mirrors.opensuse.org/list/all.html from Tue, 19 Apr 2016 00:00:20 +0200
+#
+#abort   .html
+#abort   .jpg
+#abort   .png
+#abort   .jpeg
+#abort   .gif
+#abort   .html
+#abort   .shtml
+#abort   .java
+#abort   .jar
+#abort   .htm
+
+# South Africa (za)
+regexi ^http://ftp.up.ac.za/mirrors/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+# Bangladesh (bd)
+regexi ^http://mirror.dhakacom.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.ispros.com.bd/opensuse/(.*)$ http://download.opensuse.org/\1
+# China (cn)
+regexi ^http://mirror.bjtu.edu.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://fundawang.lcuc.org.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.tuna.tsinghua.edu.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.skyshe.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.hust.edu.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://c.mirrors.lanunion.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.hustunique.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.sohu.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.ustc.edu.cn/opensuse/(.*)$ http://download.opensuse.org/\1
+# Hong Kong (hk)
+regexi ^http://mirror.rackspace.hk/openSUSE/(.*)$ http://download.opensuse.org/\1
+# Indonesia (id)
+regexi ^http://mirror.linux.or.id/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://buaya.klas.or.id/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://kartolo.sby.datautama.net.id/openSUSE/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.idrepo.or.id/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.unej.ac.id/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://download.opensuse.or.id/(.*)$ http://download.opensuse.org/\1
+regexi ^http://repo.ugm.ac.id/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://dl2.foss-id.web.id/opensuse/(.*)$ http://download.opensuse.org/\1
+# Israel (il)
+regexi ^http://mirror.isoc.org.il/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Japan (jp)
+regexi ^http://ftp.jaist.ac.jp/pub/Linux/openSUSE/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.kddilabs.jp/Linux/packages/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.novell.co.jp/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.riken.jp/Linux/opensuse/(.*)$ http://download.opensuse.org/\1
+# Korea, Republic of (kr)
+regexi ^http://ftp.daum.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.kaist.ac.kr/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.neowiz.com/opensuse/(.*)$ http://download.opensuse.org/\1
+# Malaysia (my)
+regexi ^http://oss.mmu.edu.my/opensuse/(.*)$ http://download.opensuse.org/\1
+# Oman (om)
+regexi ^http://mirror.squ.edu.om/opensuse/(.*)$ http://download.opensuse.org/\1
+# Saudi Arabia (sa)
+regexi ^http://mirrors.isu.net.sa/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Singapore (sg)
+regexi ^http://mirror.nus.edu.sg/opensuse/(.*)$ http://download.opensuse.org/\1
+# Thailand (th)
+regexi ^http://mirror.in.th/opensuse/(.*)$ http://download.opensuse.org/\1
+# Taiwan (tw)
+regexi ^http://ftp.ncnu.edu.tw/Linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.twaren.net/Linux/OpenSuSE/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.ubuntu-tw.org/mirror/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.yzu.edu.tw/Linux/openSUSE/(.*)$ http://download.opensuse.org/\1
+# Viet Nam (vn)
+regexi ^http://mirror-fpt-telecom.fpt.net/opensuse/(.*)$ http://download.opensuse.org/\1
+# Austria (at)
+regexi ^http://ftp.tugraz.at/mirror/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://suse.lagis.at/(.*)$ http://download.opensuse.org/\1
+regexi ^http://gd.tuwien.ac.at/opsys/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://suse.inode.at/opensuse/(.*)$ http://download.opensuse.org/\1
+# Bosnia and Herzegovina (ba)
+regexi ^http://mirror.opensuse.com.ba/opensuse/(.*)$ http://download.opensuse.org/\1
+# Belgium (be)
+regexi ^http://ftp.belnet.be/mirror/ftp.opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.mirrors.skynet.be/pub/ftp.opensuse.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse-mirror-gce-eu.opensu.se/(.*)$ http://download.opensuse.org/\1
+# Bulgaria (bg)
+regexi ^http://mirrors.netbg.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.bgadmin.com/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.suse.vfu.bg/(.*)$ http://download.opensuse.org/\1
+# Belarus (by)
+regexi ^http://ftp.byfly.by/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Switzerland (ch)
+regexi ^http://mirror.switch.ch/ftp/mirror/opensuse/(.*)$ http://download.opensuse.org/\1
+# Cyprus (cy)
+regexi ^http://mirror.library.ucy.ac.cy/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+# Czech Republic (cz)
+regexi ^http://ftp.linux.cz/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.nic.cz/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.karneval.cz/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+# Germany (de)
+regexi ^http://mirror.23media.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror1.hs-esslingen.de/pub/Mirrors/ftp.opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.euserv.net/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp4.gwdg.de/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp5.gwdg.de/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://download.uni-hd.de/ftp/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.hetzner.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.hosteurope.de/mirror/ftp.opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://widehat.opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.rz.uni-wuerzburg.de/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.netcologne.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.netdiscounter.net/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://files.opensuse-education.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.optimate-server.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.halifax.rwth-aachen.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://vesta.informatik.rwth-aachen.de/ftp/pub/comp/Linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.tu-chemnitz.de/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.tu-ilmenau.de/mirror/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-bayreuth.de/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-bremen.de/pub/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-erlangen.de/pub/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-kl.de/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://suse.uni-leipzig.de/pub/ftp.opensuse.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-paderborn.de/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-siegen.de/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uni-ulm.de/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+# Denmark (dk)
+regexi ^http://ftp.klid.dk/ftp/opensuse/(.*)$ http://download.opensuse.org/\1
+# Estonia (ee)
+regexi ^http://ftp.estpak.ee/pub/suse/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.linux.ee/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Spain (es)
+regexi ^http://ftp.gui.uva.es/sites/opensuse.org/(.*)$ http://download.opensuse.org/\1
+# Finland (fi)
+regexi ^http://ftp.funet.fi/pub/mirrors/ftp.opensuse.com/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# France (fr)
+regexi ^http://opensuse.cict.fr/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.mirrors.proxad.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.bofh.so/opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.mirrors.ovh.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://fr2.rpmfind.net/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+# United Kingdom (gb)
+regexi ^http://anorien.csc.warwick.ac.uk/mirrors/download.opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://osmirror.forthcloud.com/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.rackspace.co.uk/openSUSE/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror01.th.ifl.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://www.mirrorservice.org/sites/download.opensuse.org/(.*)$ http://download.opensuse.org/\1
+# Greece (gr)
+regexi ^http://ftp.ntua.gr/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.cc.uoc.gr/mirrors/linux/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+# Hungary (hu)
+regexi ^http://ftp.fsn.hu/pub/linux/distributions/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://roxen.integrity.hu/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.novell.hu/pub/mirrors/ftp.opensuse.org/opensuse/(.*)$ http://download.opensuse.org/\1
+# Ireland (ie)
+regexi ^http://ftp.esat.net/mirrors/ftp.opensuse.org/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.heanet.ie/mirrors/ftp.opensuse.org/opensuse/(.*)$ http://download.opensuse.org/\1
+# Italy (it)
+regexi ^http://opensuse.mirror.garr.it/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+# Latvia (lv)
+regexi ^http://opensuse.linux.edu.lv/(.*)$ http://download.opensuse.org/\1
+# Moldova (md)
+regexi ^http://repo.fedora.md/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+# Macedonia, the former Yugoslav Republic of (mk)
+regexi ^http://opensuse.blizoo.mk/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+# Netherlands (nl)
+regexi ^http://mirror.darkorb.me/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.leaseweb.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp2.nluug.nl/os/Linux/distr/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp1.nluug.nl/os/Linux/distr/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.hro.nl/opensuse/(.*)$ http://download.opensuse.org/\1
+# Norway (no)
+regexi ^http://opensuse.uib.no/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.uninett.no/pub/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+# Poland (pl)
+regexi ^http://ftp.icm.edu.pl/pub/Linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.onet.pl/pub/mirrors/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.man.poznan.pl/pub/linux/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.pbone.net/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.sileman.pl/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.vectranet.pl//opensuse/(.*)$ http://download.opensuse.org/\1
+# Portugal (pt)
+regexi ^http://ftp.isr.ist.utl.pt/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://lisa.gov.pt/ftp/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.rnl.tecnico.ulisboa.pt/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://cesium.di.uminho.pt/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Romania (ro)
+regexi ^http://ftp.gts.lug.ro/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.ines.lug.ro/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.roedu.net/mirrors/opensuse.org/(.*)$ http://download.opensuse.org/\1
+# Russian Federation (ru)
+regexi ^http://ftp.chg.ru/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.tspu.ru/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.suse.ru/(.*)$ http://download.opensuse.org/\1
+regexi ^http://77.88.19.73/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://93.158.155.193/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://77.88.19.68/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://77.88.19.74/opensuse/(.*)$ http://download.opensuse.org/\1
+# Sweden (se)
+regexi ^http://ftp.acc.umu.se/mirror/opensuse.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.se.eu.kernel.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.sunet.se/pub/Linux/distributions/opensuse/(.*)$ http://download.opensuse.org/\1
+# Slovenia (si)
+regexi ^http://mirrors.xgroup.si/opensuse/(.*)$ http://download.opensuse.org/\1
+# Slovakia (sk)
+regexi ^http://opensuse.ynet.sk/(.*)$ http://download.opensuse.org/\1
+# Turkey (tr)
+regexi ^http://ftp.linux.org.tr/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.metu.edu.tr/opensuse/(.*)$ http://download.opensuse.org/\1
+# Ukraine (ua)
+regexi ^http://ftp.linux.kiev.ua/pub/Linux/SuSE/(.*)$ http://download.opensuse.org/\1
+# Canada (ca)
+regexi ^http://mirror.its.dal.ca/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://www.muug.mb.ca/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.csclub.uwaterloo.ca/opensuse/(.*)$ http://download.opensuse.org/\1
+# Costa Rica (cr)
+regexi ^http://mirrors.ucr.ac.cr/opensuse/(.*)$ http://download.opensuse.org/\1
+# Nicaragua (ni)
+regexi ^http://ftp1.una.edu.ni/opensuse/(.*)$ http://download.opensuse.org/\1
+# Netherlands (nl)
+regexi ^http://mirrors.nl.eu.kernel.org/opensuse/(.*)$ http://download.opensuse.org/\1
+# United States (us)
+regexi ^http://linuxfreedom.com/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://linux.dell.com/repo/community/(.*)$ http://download.opensuse.org/\1
+regexi ^http://www.gtlib.gatech.edu/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://lug.mtu.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://reflector.vtti.vt.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://sfo-korg-mirror.kernel.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.ussg.iu.edu/linux/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors2.kernel.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors1.kernel.org/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://suse.mobile-central.org/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.metrocast.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.nexcess.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.rackspace.com/openSUSE/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.redsox.cc/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.rit.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.sonic.net/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse-mirror-gce-ap.susecloud.net/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse-mirror-gce-us.opensu.se/(.*)$ http://download.opensuse.org/\1
+regexi ^http://suse.mirrors.tds.net/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.temple.edu/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.clarkson.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.berkeley.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.umd.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.utexas.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.cs.utah.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.vtti.vt.edu/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirrors.xmission.com/opensuse/(.*)$ http://download.opensuse.org/\1
+# Australia (au)
+regexi ^http://mirror.3fl.net.au/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.aarnet.edu.au/pub/opensuse/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.iinet.net.au/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.internode.on.net/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://ftp.netspace.net.au/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.optus.net/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://mirror.rackcentral.com.au/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.mirror.aussiehq.net.au/(.*)$ http://download.opensuse.org/\1
+# New Caledonia (nc)
+regexi ^http://mirror.lagoon.nc/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# New Zealand (nz)
+regexi ^http://mirror.xnet.co.nz/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Argentina (ar)
+regexi ^http://mirror.fcaglp.unlp.edu.ar/opensuse/(.*)$ http://download.opensuse.org/\1
+regexi ^http://opensuse.patan.com.ar/(.*)$ http://download.opensuse.org/\1
+# Brazil (br)
+regexi ^http://opensuse.c3sl.ufpr.br/(.*)$ http://download.opensuse.org/\1
+regexi ^http://200.221.9.37/pub/opensuse/(.*)$ http://download.opensuse.org/\1
+# Ecuador (ec)
+regexi ^http://mirror.cedia.org.ec/opensuse/(.*)$ http://download.opensuse.org/\1
+

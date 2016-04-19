@@ -1,0 +1,2 @@
+2016-04-19 12:20:18  INFO: [gen_openSUSE_redirects.py] fetch(url: "http://mirrors.opensuse.org/list/allx.html", mtime: None, fname: "allx.html")
+2016-04-19 12:20:18 ERROR: [gen_openSUSE_redirects.py] open("http://mirrors.opensuse.org/list/allx.html") failed: HTTP Error 404: Not Found
