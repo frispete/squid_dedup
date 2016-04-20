@@ -2,24 +2,35 @@
 """
 Description:
     generate openSUSE redirects suitable for squid redirector jesred
-    from the webpage at http://mirrors.opensuse.org/list/all.html
+    fetched from the webpage at %(url)s
 
-Usage: %(appname)s [-hVvsf][-l log][-u url][-d dest][-r repl]
+Usage: %(appname)s [-hVvsf][-l log][-u url][-r redir][-R repl][-p page]
        -h, --help           this message
        -V, --version        print version and exit
        -v, --verbose        verbose mode (cumulative)
        -s, --syslog         log errors to syslog
        -l, --logfile=fname  log to this file
        -f, --force          force operation (download and replacement)
-       -u, --url=URL        fetch mirrors from this page
+       -u, --url=URL        fetch mirrors from this URL
                             [default: %(url)s]
-       -d, --dest=fname     generate jesred redirects with fname
-                            [default: %(dest)s]
-       -r, --repl=regexp    replacement clause
+       -r, --redir=fname    generate jesred redirects with fname
+                            [default: %(redir)s]
+       -R, --repl=regexp    replacement clause in redirects
                             [default: %(repl)s]
+       -p, --page=fname     save webpage with this name
+                            [default: %(page)s]
 
 The fetched page is stored in the path, that TMPDIR, TEMP or TMP
 environment variables point to, and limits access to the user itself.
+
+The usual way to run this script is by crontab -e. Add a line similar to:
+0 6 * * * /path/to/this/script/%(appname)s -vs
+
+Remember to create the file %(redir)s beforehand,
+writable for the user running the crontab, with decent permissions, e.g.:
+$ touch %(redir)s
+$ chown user:group %(redir)s
+$ chmod 644 %(redir)s
 
 Copyright:
 (c)2016 by %(author)s
@@ -28,14 +39,8 @@ License:
 %(license)s
 """
 #
-# Changelog:
-# 2016-04-18    hp  0.1  initial version
-#
 # vim:set et ts=8 sw=4:
 #
-# TODO:
-#       error handling
-#       logging
 
 __version__ = '0.1'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
@@ -70,8 +75,9 @@ class gpar:
     logfile = None
     force = False
     url = 'http://mirrors.opensuse.org/list/all.html'
-    dest = 'opensuse-redirect.rules'
+    redir = '/etc/squid/opensuse-redirect.rules'
     repl = 'http://download.opensuse.org/\\1'
+    page = 'openSUSE-mirrors.html'
 
 
 log = logging.getLogger(gpar.appname)
@@ -105,65 +111,68 @@ def setup_logging(loglevel, logfile, syslog_errors):
         logging.getLogger().addHandler(syslog)
 
 
-def fetch(url, fname, force):
-    """ fetch page from url, if newer
-        returns data, if successful or None
+def fetch(url, pagefile, force):
+    """ fetch page from url as pagefile, if newer
+        adjust permissions and mtime of pagefile
+        return data, if successful or None
     """
-    log.info('fetch(url: "%s", fname: "%s")', url, mtime, fname)
+    log.info('fetch %s', url)
 
-    # timestamp of local page
     mtime = None
-    if os.path.exists(fname):
-        mtime = os.stat(fname).st_mtime
-
-
+    if os.path.exists(pagefile):
+        mtime = os.stat(pagefile).st_mtime
 
     try:
         response = urllib.request.urlopen(url)
     except urllib.error.URLError as e:
-        log.error('open("%s") failed: %s', url, e)
+        log.error('open (%s failed: %s', url, e)
     else:
+        # last modification as unix timestamp
         lm = email.utils.parsedate_tz(response.info()['Last-Modified'])
         ts = email.utils.mktime_tz(lm)
+        log.debug(response.info())
 
-        if mtime is not None and ts <= mtime:
-            log.info('file "%s" is unchanged', fname)
-            return open(fname, 'r').read()
-
-        if mtime is None or ts > mtime or force:
-            log.info('read("%s", ts: %s)',url, ts)
+        if force or mtime is None or ts > mtime:
+            log.debug('read %s', url)
             try:
                 data = response.read()
             except Exception as e:
-                log.error('read("%s") failed: %s', url, e)
+                log.error('read %s failed: %s', url, e)
             else:
-                log.info('write("%s")', fname)
+                log.debug('write %s', pagefile)
                 try:
-                    open(fname, 'wb').write(data)
+                    open(pagefile, 'wb').write(data)
                 except IOError as e:
-                    log.error('write("%s") failed: %s', fname, e)
+                    log.error('write %s failed: %s', pagefile, e)
                 else:
-                    atime = os.stat(fname).st_atime
-                    os.utime(fname, times = (atime, ts))
+                    atime = os.stat(pagefile).st_atime
+                    os.utime(pagefile, times = (atime, ts))
+                    os.chmod(pagefile, 0o600)
                     return data
 
+        elif mtime is not None and ts <= mtime:
+            log.info('<%s> unchanged', pagefile)
+            #return open(pagefile, 'r').read()
 
-def generate(url, page, fname, mtime, destname, repl):
-    log.info('generate("%s" from "%s")', destname, fname)
+
+def generate(url, pagedata, pagefile, redirfile, repl):
+    log.info('generate %s', redirfile)
+    mtime = os.stat(pagefile).st_mtime
     try:
-        root = etree.HTML(page)
+        root = etree.HTML(pagedata)
     except etree.LxmlError as e:
-        log.error('%s malformed: %s', fname, e)
+        log.error('<%s> malformed: %s', pagefile, e)
+        return 2
 
     table = root.find('.//table[@summary]')
     if table is None:
-        log.error('%s malformed: summary table not found', fname)
-        return 1
+        log.error('<%s> malformed: summary table not found', pagefile)
+        return 3
 
     try:
-        fd = open(destname, 'w')
+        fd = open(redirfile, 'w')
     except Exception as e:
-        log.error('%s: %s', destname, e)
+        log.error(e)
     else:
         fd.write('''#
 # this file was automatically generated based on
@@ -180,7 +189,9 @@ def generate(url, page, fname, mtime, destname, repl):
 #abort   .jar
 #abort   .htm
 
-''' % (url, email.utils.formatdate(mtime, localtime = True)))
+# openSUSE Headquarter
+regexi ^http://download.opensuse.org/(.*)$ %s
+''' % (url, email.utils.formatdate(mtime, localtime = True), repl))
         country = None
         for e in table.iter('a', 'td'):
             if e.tag == 'td':
@@ -206,23 +217,24 @@ def generate(url, page, fname, mtime, destname, repl):
 
 
 def main():
-    # get filename from URL
-    url = gpar.url
-    path = urllib.parse.urlparse(url).path
-    fname = os.path.join(tempfile.gettempdir(), posixpath.basename(path))
-
     ret = 0
-    page = fetch(url, mtime, fname, gpar.force)
-    if page:
-        mtime = os.stat(fname).st_mtime
-        ret = generate(url, page, fname, mtime, gpar.dest, gpar.repl)
+    if gpar.page:
+        fname = gpar.page
+    else:
+        path = urllib.parse.urlparse(gpar.url).path
+        fname = posixpath.basename(path)
+    pagefile = os.path.join(tempfile.gettempdir(), fname)
+    pagedata = fetch(gpar.url, pagefile, gpar.force)
+    if pagedata:
+        ret = generate(gpar.url, pagedata, pagefile, gpar.redir, gpar.repl)
     return ret
+
 
 if __name__ == '__main__':
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], 'hVvsfl:u:d:r:',
+        optlist, args = getopt.getopt(sys.argv[1:], 'hVvsfl:u:r:R:p:',
             ('help', 'version', 'verbose', 'syslog', 'logfile',
-             'force', 'url=', 'dest=', 'repl=')
+             'force', 'url=', 'redir=', 'repl=', 'page=')
         )
     except getopt.error as msg:
         exit(1, msg, True)
@@ -231,7 +243,7 @@ if __name__ == '__main__':
         if opt in ('-h', '--help'):
             exit(usage = True)
         elif opt in ('-V', '--version'):
-            exit(msg = 'version: %s' % gpar.version)
+            exit(msg = 'version %s' % gpar.version)
         elif opt in ('-v', '--verbose'):
             if gpar.loglevel > logging.DEBUG:
                 gpar.loglevel -= 10
@@ -243,10 +255,12 @@ if __name__ == '__main__':
             gpar.force = True
         elif opt in ('-u', '--url'):
             gpar.url = par
-        elif opt in ('-d', '--dest'):
-            gpar.dest = par
-        elif opt in ('-r', '--repl'):
+        elif opt in ('-r', '--redir'):
+            gpar.redir = par
+        elif opt in ('-R', '--repl'):
             gpar.repl = par
+        elif opt in ('-p', '--page'):
+            gpar.page = par
 
     setup_logging(gpar.loglevel, gpar.logfile, gpar.syslog)
     logcfg = dict(
@@ -258,7 +272,7 @@ if __name__ == '__main__':
         logcfg['filename'] = gpar.logfile
     logging.basicConfig(**logcfg)
     if gpar.syslog:
-        syslog = logging.handlers.SysLogHandler(address='/dev/log')
+        syslog = logging.handlers.SysLogHandler(address = '/dev/log')
         syslog.setLevel(logging.ERROR)
         formatter = logging.Formatter('%(name)s[%(process)d]: %(levelname)s: %(message)s')
         syslog.setFormatter(formatter)

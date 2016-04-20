@@ -11,11 +11,15 @@
   <Version>0.1</Version>
   <Author>Hans-Peter Jansen</Author>
   <Email>hpj@urpla.net</Email>
+  <Eol index="-1"/>
   <Sources>
     <Source>__init__.py</Source>
     <Source>extractmirrors.py</Source>
     <Source>gen_openSUSE_redirects.py</Source>
-    <Source>request.py</Source>
+    <Source>squid-dedup.py</Source>
+    <Source>squid_dedup/__init__.py</Source>
+    <Source>squid_dedup/config.py</Source>
+    <Source>squid_dedup/main.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
