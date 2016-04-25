@@ -95,14 +95,14 @@ def exit(ret = 0, msg = None, usage = False):
 
 def setup_logging(loglevel, logfile, syslog_errors):
     """ setup various aspects of logging facility """
-    logcfg = dict(
+    logconfig = dict(
         level = loglevel,
         format = '%(asctime)s %(levelname)5s: [%(name)s] %(message)s',
         datefmt = '%Y-%m-%d %H:%M:%S',
     )
     if logfile is not None:
-        logcfg['filename'] = logfile
-    logging.basicConfig(**logcfg)
+        logconfig['filename'] = logfile
+    logging.basicConfig(**logconfig)
     if syslog_errors:
         syslog = logging.handlers.SysLogHandler(address = '/dev/log')
         syslog.setLevel(logging.ERROR)
@@ -263,19 +263,5 @@ if __name__ == '__main__':
             gpar.page = par
 
     setup_logging(gpar.loglevel, gpar.logfile, gpar.syslog)
-    logcfg = dict(
-        level = gpar.loglevel,
-        format = '%(asctime)s %(levelname)5s: [%(name)s] %(message)s',
-        datefmt = '%Y-%m-%d %H:%M:%S',
-    )
-    if gpar.logfile is not None:
-        logcfg['filename'] = gpar.logfile
-    logging.basicConfig(**logcfg)
-    if gpar.syslog:
-        syslog = logging.handlers.SysLogHandler(address = '/dev/log')
-        syslog.setLevel(logging.ERROR)
-        formatter = logging.Formatter('%(name)s[%(process)d]: %(levelname)s: %(message)s')
-        syslog.setFormatter(formatter)
-        logging.getLogger().addHandler(syslog)
 
     sys.exit(main())
