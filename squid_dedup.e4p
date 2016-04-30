@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-5.1.dtd">
-<!-- eric project file for project squid-dedup -->
+<!-- eric project file for project squid_dedup -->
 <!-- Copyright (C) 2016 Hans-Peter Jansen, hpj@urpla.net -->
 <Project version="5.1">
   <Language>en_US</Language>
@@ -14,12 +14,24 @@
   <Eol index="-1"/>
   <Sources>
     <Source>__init__.py</Source>
-    <Source>extractmirrors.py</Source>
     <Source>gen_openSUSE_redirects.py</Source>
-    <Source>squid-dedup.py</Source>
+    <Source>squid_dedup.py</Source>
     <Source>squid_dedup/__init__.py</Source>
+    <Source>squid_dedup/__main__.py</Source>
     <Source>squid_dedup/config.py</Source>
     <Source>squid_dedup/main.py</Source>
+    <Source>squid_dedup/worker.py</Source>
+    <Source>squid_dedup/lib/__init__.py</Source>
+    <Source>squid_dedup/lib/configfile.py</Source>
+    <Source>squid_dedup/lib/frec.py</Source>
+    <Source>squid_dedup/lib/logsetup.py</Source>
+    <Source>squid_dedup/lib/process.py</Source>
+    <Source>squid_dedup/lib/profile.py</Source>
+    <Source>squid_dedup/lib/record.py</Source>
+    <Source>squid_dedup/lib/skel.py</Source>
+    <Source>squid_dedup/test/test_configfile.py</Source>
+    <Source>squid_dedup/test/test_frec.py</Source>
+    <Source>squid_dedup/test/test_record.py</Source>
   </Sources>
   <Forms/>
   <Translations/>

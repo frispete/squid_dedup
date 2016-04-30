@@ -6,12 +6,17 @@
 # vim:set et ts=8 sw=4:
 
 import os
+import sys
 import time
 import signal
+import locale
 import logging
+import traceback
 
 log = logging.getLogger('main')
 
+from config import Config
+from worker import Worker
 
 class Main(object):
     def __init__(self, config):
@@ -31,7 +36,6 @@ class Main(object):
 
         log.trace('Main(%s)', config)
         self.config = config
-        self.validaddrs = config.validaddrs
         self.loglevel = config.loglevel
         self._processes = []
         self._exiting = False
@@ -41,12 +45,23 @@ class Main(object):
         ret = 0
         log.info('Main.run(%s)', os.getpid())
 
+        if 1:
+            worker = Worker(self.config)
+            self._processes.append(worker)
+            worker.start()
+
+        counter = 5
         while not self._exiting:
+            log.trace('Main.run(counter: %s)', counter)
             time.sleep(1)
+            counter -= 1
+            if counter <= 0:
+                self.shutdown()
+
         log.info('Main.run() finished', )
         return ret
 
-    def shutdown(self, sig, _):
+    def shutdown(self, sig = None, _ = None):
         log.debug('Main.shutdown(%s, sig: %s)', os.getpid(), sig)
         self._exiting = True
         for p in self._processes:
@@ -54,3 +69,26 @@ class Main(object):
         #for p in self._processes:
         #    p.join()
 
+
+if __name__ == '__main__':
+    # set C locale
+    locale.setlocale(locale.LC_ALL, 'C')
+    os.environ['LANG'] = 'C'
+
+    # process command line options and load config files
+    config = Config()
+
+    ret = 0
+    try:
+        main = Main(config)
+        ret = main.run()
+    except KeyboardInterrupt:
+        log.info('terminated by ^C')
+        ret = 4
+    except:
+        exc_type, exc_value, tb = sys.exc_info()
+        log.error('internal error: %s',
+            ''.join(traceback.format_exception(exc_type, exc_value, tb)))
+        ret = 8
+
+    sys.exit(ret)

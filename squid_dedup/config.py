@@ -2,197 +2,116 @@
 # -*- coding: utf8 -*
 """
 Synopsis:
-%(appname)s
+    %(appname)s
 
-Usage: %(appname)s [-%(cmdlin_options)s]%(cmdlin_parmsg)s
+Usage: %(appname)s [-%(_cmdlin_options)s]%(_cmdlin_parmsg)s
        -h, --help           this text
        -V, --version        print version and exit
-       -v, --verbose        raises loglevel
-                            [by default, only errors and warnings are logged]
-                            -v:   informal messages
-                            -vv:  debugging
-       -c, --cfgfile=file   specify config file, builtin defaults are used
-                            otherwise
-       -l, --logfile=file   specify log file, '-' for console.
+       -v, --verbose        raises log level (cumulative)
+       -q, --quiet          lowers log level (cumulative)
+       -l, --logfile=file   log to file or with '-' on console
                             [default: %(logfile)s]
-       -p, --profile        enable profiling code, pstats files are saved to
-                            %(profiledir)s
-       -x, --extract        extract built-in config file to current directory
-                            if a filename is given, only that one is extracted
+       -L, --loglevel=level specify a certain log level directly
+                            [default: %(_loglevel_str)s]
+       -s, --syslog=level   specify syslog log level
+                            [default: %(_sysloglevel_str)s]
+       -c, --cfgfile=file   main config file
+       -i, --include=match  comma separated list of additional config files
+       -p, --profile        enable profiling code
+       -x, --extract        extract config file
 
-You can generate an example config file in current directory with the option -x.
+If a config file is specified, this file must exist, otherwise built-in
+defaults are used. For additional _sections_, a list of globbing args
+is evaluated: %(_include_list)s.
 
-Command line parameter take precedence over config file parameter.
+By default, only errors and warnings are logged.
+Available log levels are: %(_loglevel_list)s
+
+Profiling files are written to %(profiledir)s
 
 Copyright: %(copyright)s
 License: %(license)s.
 """
 
 __version__ = '0.0.1'
-__verdate__ = '20160420'
+__verdate__ = '20160425'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __copyright__ = '(c)2016 ' + __author__
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
 
 
-__builtincfg__ = """\
-# %(cfgfile)s: config file for %(appname)s V.[%(version)s/%(verdate)s]
+__builtin_cfg__ = """\
+# Config file for %(appname)s V.[%(version)s/%(verdate)s]
 
 [global]
 
-# comma separated list of allowed IPv4 addresses in CIDR notation
-validaddrs: %(validaddrs_csv)s
+# worker delay (in seconds)
+worker_delay: %(worker_delay)s
 
-# additional config files
-include: %(include)s
+# Comma separated list of additional config file patterns
+include: %(_include_list)s
 
-# log level
-# 50: critical errors only
-# 40: errors
-# 30: warnings
-# 20: info
-# 10: debug
-loglevel: %(loglevel)s
+# Log level (one of: %(_loglevel_list)s)
+loglevel: %(_loglevel_str)s
 
-# Log to this file (or - to log to console)
+# Log to this file (or to console, if unset or '-')
 logfile: %(logfile)s
+
+# Log to syslog with this log level
+sysloglevel: %(_sysloglevel_str)s
 
 # profiling
 profile: %(profile)s
 profiledir: %(profiledir)s
 
-# Copyright: %(copyright)s
-# License: %(license)s
-# end of %(cfgfile)s
+[section1]
+key_a = value
+key_b = morevalue
+
+[section2]
+key_c = othervalue
+key_d = differentvalue
+
 """
 
 import os
 import sys
+import glob
 import getopt
 import socket
 import logging
-import netaddr
-import traceback
 
-from configparser import ConfigParser
 from collections import OrderedDict
 
-# add project basedir to sys.path, if this module is executed standalone
-# in order to avoid relative paths
-if __name__ == '__main__':
-    basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if basedir not in sys.path:
-        sys.path.insert(0, basedir)
-
-import lib.asciify
+# local imports
+from lib import configfile, logsetup, record, frec
 
 
-# setup  logging
+# setup logging
 log = logging.getLogger('config')
 
-TRACE = 5       # add a new debug level
-logging.addLevelName(TRACE, 'TRACE')
-
-def trace(self, message, *args, **kws):
-    self.log(TRACE, message, *args, **kws)
-logging.Logger.trace = trace
-logging.TRACE = TRACE
-#some logging optimizations
-logging._srcfile = None
-#logging.logThreads = 0
-#logging.logProcesses = 0
-
-
-def out(arg):
-    err(arg, sys.stdout)
-
-
-def err(arg, ch = sys.stderr):
-    if arg:
-        ch.write(arg)
-        if arg[-1] != '\n':
-            ch.write('\n')
-    else:
-        ch.write('\n')
-    ch.flush()
-
+stderr = lambda *s: print(*s, file = sys.stderr, flush = True)
 
 def exit(ret = 0, msg = None):
     if msg:
-        err(msg)
+        stderr(msg)
     sys.exit(ret)
 
 
-def splitstr(msg, splitter = ','):
+def strsplit(msg, splitter = ','):
     return [s for s in map(lambda s: s.strip(), msg.split(splitter)) if s]
 
 
-class ConfigBaseError(Exception):
-    pass
-
-# derive from ConfigParser in order to avoid issues with values
-# containing % due to the magical interpolation feature
-# note: ConfigParser is not a new style class
-class ConfigBase(ConfigParser):
-    """A ConfigParser implementation, that keeps the section order intact"""
-    def __init__(self):
-        ConfigParser.__init__(self, dict_type = OrderedDict)
-
-    def get(self, section, option, default = None, allowed = None):
-        if ConfigParser.has_option(self, section, option):
-            value = ConfigParser.get(self, section, option)
-            if allowed is not None:
-                if value in allowed:
-                    default = value
-                else:
-                    raise ConfigBaseError('invalid value \'%s\' for %s:%s (allowed: %s)' % (
-                                                     value, section, option, ', '.join(allowed)))
-            else:
-                default = value
-        return default
-
-    def getlist(self, section, option, default = None, splitter = ','):
-        """ convert a splitter separated option value to a list """
-        if default is None:
-            default = []
-        if ConfigParser.has_option(self, section, option):
-            default = ConfigParser.get(self, section, option).strip()
-            # special case: split on newlines: remove any carriage returns
-            if splitter == '\n':
-                default = default.replace('\r', '')
-            default = default.split(splitter)
-            # eliminate empty values
-            default = [val for val in map(lambda v: v.strip(), default) if val]
-        return default
-
-    def getbin(self, section, option, default = None):
-        if ConfigParser.has_option(self, section, option):
-            default = ConfigParser.get(self, section, option).decode('string_escape')
-        return default
-
-    def getbool(self, section, option, default = None):
-        """ short version of getboolean """
-        if ConfigParser.has_option(self, section, option):
-            default = ConfigParser.getboolean(self, section, option)
-        return default
-    getboolean = getbool
-
-    def getint(self, section, option, default = None):
-        if ConfigParser.has_option(self, section, option):
-            # convert int values with automatic base selection
-            default = int(ConfigParser.get(self, section, option), 0)
-        return default
+def strlist(list, joiner = ', '):
+    return joiner.join(list)
 
 
-class ConfigError(ConfigBaseError):
-    pass
-
-class Config(ConfigBase):
+class Config:
     """Central configuration class"""
     # internal
     if __name__ == '__main__':
         # for testing purposes
-        appdir, appname = '.', 'dcc'
+        appdir, appname = '.', 'config'
     else:
         appdir, appname = os.path.split(sys.argv[0])
     if appdir in ('', '.'):
@@ -205,6 +124,8 @@ class Config(ConfigBase):
     copyright = __copyright__
     license = __license__
 
+    worker_delay = 2
+
     pid = os.getpid()
     hostname = socket.getfqdn()
     if hostname.endswith('.lisa.loc'):
@@ -213,39 +134,54 @@ class Config(ConfigBase):
         TESTING = False
     PRODUCTION = not TESTING
 
-    # network parameter
-    validaddrs = ['0/0']
+    # additional config files
+    if TESTING:
+        include = [os.path.join('.', 'conf', '*.conf'),
+                   os.path.join(os.sep, 'etc', appname, '*.conf')]
+    else:
+        include = [os.path.join('~', '.' + appname, '*.conf'),
+                   os.path.join(os.sep, 'etc', appname, '*.conf')]
 
-    # config files and logging parameter
-    cfgfile = '%s.conf' % appname
+    # logging
     if TESTING:
         logfile = '-'
-        loglevel = logging.INFO
+        loglevel = logging.WARNING
+        sysloglevel = None
     else:
-        logfile = 'logs/%s.log' % appname
-        loglevel = logging.INFO
-    db_loglevel = loglevel
-
-    # internal
-    include = []
+        logfile = os.path.join(os.sep, 'var', 'log', appname + '.log')
+        loglevel = logging.WARNING
+        sysloglevel = logging.ERROR
 
     # profiling
     profile = False
     profiledir = os.path.join(appdir, 'profiles')
 
+    # internal
+
+    primary_section = 'global'
+    section_dict = OrderedDict()
+
+    _loglevel_str = None
+    _sysloglevel_str = None
+
+    _include_list = None
+    _loglevel_list = None
+
     # command line parameter
-    cmdlin_options = 'hVvxps'
-    cmdlin_paropt = 'a:c:l:t:u:g:m:d:'
-    cmdlin_parmsg = '[-c cfg][-l log][-t timeout][-u uid][-g gid][-m umask][-d dir]'
-    cmdlin_longopt = ('help', 'version', 'verbose', 'extract', 'profile',
-                      'action', 'simulate', 'cfgfile=', 'logfile=', 'timeout=',
-                      'uid=', 'gid=', 'umask=', 'chdir=',
-                     )
+    _cmdlin_options = 'hVvqpx'
+    _cmdlin_paropt = 'l:L:s:c:i:'
+    _cmdlin_parmsg = '[-l log][-L loglvl][-s sysloglvl][-c cfg][-i inc,..]'
+    _cmdlin_longopt = (
+        'help', 'version', 'verbose', 'quiet', 'logfile=', 'loglevel=', 'syslog=',
+        'cfgfile=', 'include=', 'profile', 'extract',
+    )
+
 
     def __init__(self):
-        """load config file and process command line parameter"""
-        ConfigBase.__init__(self)
-        # transfer class vars to instance __dict__
+        """load config files and process command line parameter"""
+        super().__init__()
+
+        # transfer class vars to instance __dict__ for __repr__
         for attr, value in Config.__dict__.items():
             if not attr.startswith('__') and not callable(value):
                 self.__dict__[attr] = value
@@ -253,202 +189,171 @@ class Config(ConfigBase):
         # process command line
         try:
             optlist, args = getopt.getopt(sys.argv[1:],
-                self.cmdlin_options + self.cmdlin_paropt, self.cmdlin_longopt)
+                self._cmdlin_options + self._cmdlin_paropt, self._cmdlin_longopt)
         except getopt.error as msg:
             exit(1, '%s: %s' % (self.appname, msg))
 
-        #err('optlist: %s\nargs: %s\n' % (optlist, args))
+        # reset any pre configured includes, if includes are specified
+        for opt, par in optlist:
+            if opt in ('-i', '--include'):
+                self.include = []
 
-        self.setuplog()
+        if self.TESTING:
+            logsetup.logsetup(logging.TRACE)
 
-        # process exiting command line parameter
+        # process command line parameter
         for opt, par in optlist:
             if opt in ('-h', '--help'):
                 exit(0, self.usage())
             elif opt in ('-V', '--version'):
-                exit(0, 'version: %s/%s' % (self.version, self.verdate))
-            elif opt in ('-x', '--extract'):
-                if args:
-                    cfgfile = args.pop(0)
-                else:
-                    cfgfile = None
-                if cfgfile == self.cfgfile:
-                    self.write_cfgfile(self.cfgfile, self.builtin_cfg())
-                self.write_cfgfiles(cfgfile)
-                exit(0)
-            # non default cfgfile given?
-            elif opt in ('-c', '--cfgfile'):
-                if not os.access(par, os.R_OK):
-                    exit(1, '%s: cannot read config file \'%s\'' % (self.appname, par))
-                self.cfgfile = par
-
-        # load primary config file
-        try:
-            self.load(self.cfgfile)
-        except Exception as e:
-            exc_type, exc_value, tb = sys.exc_info()
-            log.error('load: %s', ''.join(traceback.format_exception(exc_type, exc_value, tb)))
-            exit(2, '%s: %s' % (self.appname, e))
-
-        # process command line parameter
-        for opt, par in optlist:
-            if opt in ('-v', '--verbose'):
+                exit(0, 'version %s/%s' % (self.version, self.verdate))
+            elif opt in ('-v', '--verbose'):
                 if self.loglevel > logging.DEBUG:
                     self.loglevel -= 10
                 else:
                     if self.loglevel == logging.DEBUG:
-                        # global log level: TRACE
                         self.loglevel = logging.TRACE
+            elif opt in ('-q', '--quiet'):
+                if self.loglevel == logging.TRACE:
+                    self.loglevel = logging.DEBUG
+                elif self.loglevel < logging.CRITICAL:
+                    self.loglevel += 10
             elif opt in ('-l', '--logfile'):
                 self.logfile = par
+            elif opt in ('-L', '--loglevel'):
+                ll = logsetup.loglevel(par)
+                if ll is None:
+                    exit(1, '%s: invalid loglevel <%s>' % par)
+                else:
+                    self.loglevel = ll
+            elif opt in ('-s', '--syslog'):
+                ll = logsetup.loglevel(par)
+                if ll is None:
+                    exit(1, '%s: invalid syslog level <%s>' % par)
+                else:
+                    self.sysloglevel = ll
+            elif opt in ('-c', '--cfgfile'):
+                # load primary config file immediately
+                self.load_primary_config(par)
+            elif opt in ('-i', '--include'):
+                for arg in strsplit(par):
+                    self.include.append(arg)
             elif opt in ('-p', '--profile'):
                 self.profile = True
-
-        # static options processed, setup config and logging
-        self.setup()
-
-        # load auxilliary config files
-        for include in self.include:
-            #log.trace('__init__(include: %s)', include)
-            try:
-                self.load_include(include)
-            except Exception as e:
-                #exc_type, exc_value, tb = sys.exc_info()
-                #log.error('load_include: %s',
-                #          ''.join(traceback.format_exception(exc_type, exc_value, tb)))
-                exit(3, '%s: %s' % (self.appname, e))
-
-        # process sections of objects
-        try:
-            self.process_sections()
-        except Exception as e:
-            exit(4, '%s: %s' % (self.appname, e))
-
-
-    def load(self, cfgfile):
-        """read main config file"""
-        log.debug('load(%s)', cfgfile)
-        if not self.read(cfgfile):
-            log.error('config file %s not found', cfgfile)
-            exit(3)
-
-        # process global section
-
-        self.validaddrs = map(netaddr.IPNetwork, self.getlist('global', 'validaddrs', self.validaddrs))
-
-        # loglevel and file
-        self.loglevel = self.getint('global', 'loglevel', self.loglevel)
-        self.logfile = self.get('global', 'logfile', self.logfile)
-        self.setuplog()
-
-        # profiling
-        self.profile = self.getbool('global', 'profile', self.profile)
-        self.profiledir = self.get('global', 'profiledir', self.profiledir)
-
-        # fetch includes
-        for section in self.sections():
-            for include in self.getlist(section, 'include'):
-                log.trace('load(include: %s)', include)
-                self.include.append(include)
-
-        # check mandatory parameter
-        for var, msg in (
-            ('validaddrs', 'no valid addresses defined'),
-        ):
-            if not getattr(self, var):
-                exit(2, '%s: %s' % (self.appname, msg))
-
-    def load_include(self, cfgfile):
-        """read auxilliary config files"""
-        log.debug('load_include(%s)', cfgfile)
-        if not self.read(cfgfile):
-            log.error('config file %s not found', cfgfile)
-            exit(3)
-
-    def process_sections(self):
-        # process object sections
-        for section in self.sections():
-            for prefix, (objdict, handler, _) in self._include_dispatch.items():
-                done = False
-                if section.startswith('%s_' % prefix):
-                    obj = handler(self, section)
-                    other = objdict.get(section)
-                    if other:
-                        raise ConfigError('invalid attempt to replace exisiting section %s:[%s] (line %s) with %s:[%s] (line %s)' % (
-                                           other.__file__, other.name, other.__line__,  obj.__file__, obj.name, obj.__line__))
-                    else:
-                        log.trace('process_sections(%s)', obj)
-                        objdict[section] = obj
-                        done = True
-                        break
-            if done is False and section not in ('global', ):
-                sdict = self._sections[section]
-                raise ConfigError('invalid section %s:[%s] (line %s)' % (
-                                   sdict['__file__'], section, sdict['__line__']))
-
-    def setup(self):
+            elif opt in ('-x', '--extract'):
+                self.write_cfgfile(self.appname + '.conf', self.builtin_cfg())
+                exit(0)
 
         if self.profile and not os.path.exists(self.profiledir):
             os.makedirs(self.profiledir)
 
-        self.setuplog()
+        logsetup.logsetup(self.loglevel, self.logfile, self.sysloglevel)
 
-        log.trace('setup(uid: %s, gid: %s, umask: %s, chdir: %s, loglevel: %s, logfile: %s)',
-                  self.uid, self.gid, self.umask, self.chdir, self.loglevel, self.logfile)
+        log.trace('logsetup(logfile: %s, loglevel: %s, sysloglevel: %s)',
+                  self.logfile, self.loglevel, self.sysloglevel)
 
-    def setuplog(self):
-        # setup logging: revert any previous logging settings
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-        logcfg = dict(
-            level = self.loglevel,
-            format = '%(asctime)s %(levelname)5s: [%(name)s] %(message)s',
-            #datefmt = '%Y-%m-%d %H:%M:%S',
-            encoding = 'utf-8'
-        )
-        if self.logfile != '-':
-            logcfg['filename'] = self.logfile
-        logging.basicConfig(**logcfg)
-        if self.logfile != '-':
-            # log errors to console
-            console = logging.StreamHandler()
-            console.setLevel(logging.ERROR)
-            formatter = logging.Formatter(logcfg['format'])
-            console.setFormatter(formatter)
-            logging.getLogger().addHandler(console)
+        # load auxiliary config files
+        for include in self.include:
+            log.trace('include(%s)', include)
+            for cfgfile in sorted(glob.glob(include)):
+                log.trace('read(%s)', cfgfile)
+                try:
+                    cf = configfile.ConfigFile(cfgfile)
+                except configfile.ConfigFileError as e:
+                    log.error(e)
+                self.process_aux_sections(cf)
+
+    def load_primary_config(self, cfgfile):
+        log.trace('load_primary_config(%s)', cfgfile)
+        try:
+            cf = configfile.ConfigFile(cfgfile)
+        except configfile.ConfigFileError as e:
+            log.critical(e)
+            exit(2)
+        self.process_primary_section(cf)
+        self.process_aux_sections(cf, primary = True)
+
+    def process_primary_section(self, cf):
+        log.trace('process_primary_section(%s)', cf.filename)
+        # misc.
+        self.worker_delay = cf.getint(self.primary_section, 'worker_delay',
+                                      self.worker_delay)
+
+        # includes
+        self.include = cf.getlist(self.primary_section, 'include', self.include)
+
+        # logging
+        self.logfile = cf.get(self.primary_section, 'logfile', self.logfile)
+        self.loglevel = logsetup.loglevel(cf.get(self.primary_section, 'loglevel',
+                                                 self.loglevel))
+        self.sysloglevel = logsetup.loglevel(cf.get(self.primary_section, 'sysloglevel',
+                                                    self.sysloglevel))
+
+        # profiling
+        self.profile = cf.getbool(self.primary_section, 'profile', self.profile)
+        self.profiledir = cf.get(self.primary_section, 'profiledir', self.profiledir)
+
+        # reset logging setup
+        logsetup.logsetup(self.loglevel, self.logfile, self.sysloglevel)
+
+        # check mandatory parameter
+        #for var, msg in (
+        #    ('attrib', 'no valid attrib defined'),
+        #):
+        #    if not getattr(self, var):
+        #        exit(2, '%s: %s' % (self.appname, msg))
+
+    def process_aux_sections(self, cf, primary = False):
+        log.trace('process_aux_sections(%s, primary = %s)', cf.filename, primary)
+        # sections
+        for section in cf.sections():
+            log.trace('process_aux_section(section: %s)', section)
+            if section != self.primary_section:
+                self.process_section(cf, section)
+            elif not primary:
+                log.error('primary section [%s] is only allowed once: ignored',
+                          self.primary_section)
+
+    def process_section(self, cf, section):
+        log.trace('process_section(%s: %s)', section, cf.items(section))
+        if section in self.section_dict:
+            log.error('section [%s] already processed from %s: ignored',
+                      section, self.section_dict[section]._cfgfile)
+            return
+        rec = record.recordfactory('Section', **dict(cf.items(section)))
+        rec._cfgfile = cf.filename
+        self.section_dict[section] = rec
+
+    def create_special_vars(self):
+        self._include_list = strlist(self.include)
+        self._loglevel_list = strlist(logsetup.loglevel_list)
+        self._loglevel_str = logsetup.loglevel_str(self.loglevel)
+        self._sysloglevel_str = logsetup.loglevel_str(self.sysloglevel)
 
     def builtin_cfg(self):
-        # return built-in config file data with current settings adopted
-
-        self.validaddrs_csv = ', '.join(map(str, self.validaddrs))
-        self.include_csv = ', '.join(['%s.conf' % key for key in self._include_dispatch.keys()])
-        return __builtincfg__ % self.__dict__
-
-    def write_cfgfiles(self, cfgfile = None):
-        for prefix, (_, _, cfg) in self._include_dispatch.items():
-            self.prefix = prefix
-            if cfgfile and cfgfile != '%s.conf' % prefix:
-                continue
-            self.write_cfgfile('%s.conf' % prefix, cfg % self.__dict__)
+        self.create_special_vars()
+        return __builtin_cfg__ % self.__dict__
 
     def write_cfgfile(self, cfgfile, cfg):
         if os.path.exists(cfgfile):
             os.rename(cfgfile, cfgfile + '~')
-            err('keep old %s as %s~' % (cfgfile, cfgfile))
+            stderr('keep old %s as %s~' % (cfgfile, cfgfile))
         open(cfgfile, 'w').write(cfg)
-        err('config written to: %s' % cfgfile)
+        stderr('config written to: %s' % cfgfile)
 
     def usage(self):
+        self.create_special_vars()
         return __doc__ % self.__dict__
 
     def __repr__(self):
-        return u'%s(\n%s\n)' % (self.__class__.__name__, lib.asciify.frec(self.__dict__, withunderscores = False))
+        self.create_special_vars()
+        return '%s(\n%s\n)' % (self.__class__.__name__,
+                               frec.frec(self.__dict__, withunderscores = False))
 
 
 # main section, only for config debugging purposes
 if __name__ == '__main__':
-    #Config.loglevel = logging.TRACE
-    Config.loglevel = logging.DEBUG
+    Config.loglevel = logging.TRACE
     Config.logfile = '-'
     config = Config()
     log.debug(config)

@@ -1,0 +1,1 @@
+squid_dedup/__main__.py
