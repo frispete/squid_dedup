@@ -97,12 +97,12 @@ profiledir: %(profiledir)s
 #replace: url-repl.%%(intdomain)s/\\1
 # fetch URLs (optional, default: False)
 # download full object, if clients load just byte ranges from multiple servers
-#fetch: False
+#fetch: false
 
 #[sourceforge]
 #match: ^http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
 #replace: http://dl.sourceforge.net.%%(intdomain)s/\\1
-#fetch: True
+#fetch: true
 """
 
 import os
