@@ -69,8 +69,8 @@ __builtin_cfg__ = """\
 # internal squid domain
 intdomain: %(intdomain)s
 
-# worker delay (in seconds)
-worker_delay: %(worker_delay)s
+# fetch url thread count
+fetch_threads: %(fetch_threads)s
 
 # Comma separated list of additional config file patterns
 include: %(_include_list)s
@@ -106,6 +106,7 @@ import os
 import re
 import sys
 import glob
+import queue
 import getopt
 import socket
 import logging
@@ -156,8 +157,8 @@ class Config:
     # internal domain
     intdomain = 'squid.internal'
 
-    # delay worker loops
-    worker_delay = 2
+    # delay fetch loops
+    fetch_threads = 2
 
     pid = os.getpid()
     hostname = socket.getfqdn()
@@ -193,7 +194,7 @@ class Config:
 
     primary_section = 'global'
     section_dict = OrderedDict()
-    url_set = set()
+    fetch_queue = queue.Queue()
 
     _loglevel_str = None
     _sysloglevel_str = None
@@ -317,8 +318,8 @@ class Config:
         self.intdomain = cf.get(self.primary_section, 'intdomain', self.intdomain)
 
         # misc.
-        self.worker_delay = cf.getint(self.primary_section, 'worker_delay',
-                                      self.worker_delay)
+        self.fetch_threads = cf.getint(self.primary_section, 'fetch_threads',
+                                       self.fetch_threads)
 
         # includes
         self.include = cf.getlist(self.primary_section, 'include', self.include)
