@@ -14,15 +14,18 @@ class ConfigFile(configparser.ConfigParser):
     """A ConfigParser featuring a few convenient conversions
      * no section name mangling
      * strict parsing: check section and option duplicates
+     * basic interpolation: replace %(var)s style vars from defaults
+       Note: ConfigParser allows for string based replacement values
+             only, therefor we're cleaning up the defaults mapping
     """
     ENCODING = 'utf8'
 
     # don't mangle section names
     optionxform = str
 
-    def __init__(self, filename = None):
+    def __init__(self, defaults = None, filename = None):
         self.filename = filename
-        super().__init__(strict = True)
+        super().__init__(defaults = self._cleanup_defaults(defaults), strict = True)
         if filename is not None:
             self.read(filename)
 
@@ -88,3 +91,13 @@ class ConfigFile(configparser.ConfigParser):
             # convert float values
             value = float(super().get(section, option, **kwargs))
         return value
+
+    def _cleanup_defaults(self, defaults):
+        """ConfigParser doesn't allow non string defaults mapping values"""
+        if defaults is not None:
+            d = dict()
+            for k, v in defaults.items():
+                if isinstance(v, str):
+                    d[k] = v
+            defaults = d
+        return defaults
