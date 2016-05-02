@@ -32,6 +32,8 @@ class Dedup:
                     if n:
                         #log.trace('Dedup.parse: %s matched: %s', match, repl)
                         self._cache[url] = repl
+                        if section.fetch:
+                            self._config.fetch_queue.put(url)
                         return repl
 
     def process(self, url, channel = None):
@@ -51,7 +53,6 @@ class Dedup:
                 log.info('URL <%s> rewritten: <%s>', url, newurl)
             else:
                 log.info('URL <%s> rewritten: <%s> (ch: %s)', url, newurl, channel)
-            self._config.fetch_queue.put(url)
         else:
             if channel is None:
                 log.debug('URL <%s> ignored', url)
