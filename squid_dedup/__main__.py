@@ -15,8 +15,8 @@ import traceback
 log = logging.getLogger('main')
 
 from config import Config
-from worker import Worker
 from dedup import Dedup
+from fetch import Fetch
 
 class Main(object):
     def __init__(self, config):
@@ -35,9 +35,9 @@ class Main(object):
             pass
 
         log.trace('Main(%s)', config)
-        self.config = config
-        self.loglevel = config.loglevel
-        self._processes = []
+        self._config = config
+        self._loglevel = config.loglevel
+        self._threads = []
         self._exiting = False
 
     def run(self):
@@ -46,11 +46,12 @@ class Main(object):
         log.info('Main.run(%s)', os.getpid())
 
         if 1:
-            worker = Worker(self.config)
-            self._processes.append(worker)
-            worker.start()
+            for i in range(self._config.fetch_threads):
+                fetch = Fetch(self._config.fetch_queue)
+                fetch.start()
+                self._threads.append(fetch)
 
-        dedup = Dedup(self.config, self._exiting)
+        dedup = Dedup(self._config, self._exiting)
         while not self._exiting:
             if not dedup():
                 break
@@ -63,10 +64,11 @@ class Main(object):
     def shutdown(self, sig = None, _ = None):
         log.debug('Main.shutdown(%s, sig: %s)', os.getpid(), sig)
         self._exiting = True
-        for p in self._processes:
-            p.shutdown()
-        for p in self._processes:
-            p.join()
+        self._config.fetch_queue.join()
+        for t in range(self._config.fetch_threads):
+            self._config.fetch_queue.put(None)
+        for t in self._threads:
+            t.join()
         # forced exit
         os._exit(3)
 
