@@ -7,7 +7,6 @@
 
 import os
 import sys
-import time
 import signal
 import locale
 import logging
@@ -17,6 +16,7 @@ log = logging.getLogger('main')
 
 from config import Config
 from worker import Worker
+from dedup import Dedup
 
 class Main(object):
     def __init__(self, config):
@@ -50,13 +50,12 @@ class Main(object):
             self._processes.append(worker)
             worker.start()
 
-        counter = 5
+        dedup = Dedup(self.config, self._exiting)
         while not self._exiting:
-            log.trace('Main.run(counter: %s)', counter)
-            time.sleep(1)
-            counter -= 1
-            if counter <= 0:
-                self.shutdown()
+            if not dedup():
+                break
+
+        self.shutdown()
 
         log.info('Main.run() finished', )
         return ret
@@ -66,8 +65,10 @@ class Main(object):
         self._exiting = True
         for p in self._processes:
             p.shutdown()
-        #for p in self._processes:
-        #    p.join()
+        for p in self._processes:
+            p.join()
+        # forced exit
+        os._exit(3)
 
 
 if __name__ == '__main__':
