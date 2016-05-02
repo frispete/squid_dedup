@@ -4,28 +4,34 @@
 # License: GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details
 # vim:set et ts=8 sw=4:
 
-import os
+import urllib
+import urllib.request
 import logging
+import threading
 
-from lib import profile
-from lib import process
+log = logging.getLogger('fetch')
 
-log = logging.getLogger('worker')
+class Fetch(threading.Thread):
+    """ fetch objects from queue """
+    def __init__(self, queue):
+        self._queue = queue
+        super().__init__()
 
-class Worker(process.Process):
-
-    @profile.profile(fn = 'checker_${date}_$time')
     def run(self):
-        """periodically do some work"""
-        super().run()
-        log.debug('%s.run(pid: %s)', self.name(), os.getpid())
-        config = self.config
-        delay = process.Delay(self, config.worker_delay)
-        while not self.exiting():
-            log.trace('%s.loop()', self.name())
-            delay()
-
-    def shutdown(self, sig = None, _ = None):
-        """intercept shutdown for clean up"""
-        log.debug(  '%s.shutdown(%s, sig = %s)', self.name(), os.getpid(), sig)
-        super().shutdown(sig, _)
+        while True:
+            url = self._queue.get()
+            if url is None:
+                break
+            log.debug('fetch <%s>', url)
+            try:
+                response = urllib.request.urlopen(url)
+            except urllib.error.URLError as e:
+                log.error('open <%s> failed: %s', url, e)
+            else:
+                log.trace(response.info())
+                try:
+                    response.read()
+                except Exception as e:
+                    log.error('read <%s> failed: %s', url, e)
+                else:
+                    log.info('fetched <%s>', url)
