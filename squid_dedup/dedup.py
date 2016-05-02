@@ -57,7 +57,7 @@ class Dedup:
         try:
             url, options = line.split(maxsplit = 1)
         except ValueError:
-            self.stdout('BH')
+            self.stdout('ERR')
             log.error('Invalid input <%s>', line)
         else:
             self.process(url)
@@ -73,7 +73,7 @@ class Dedup:
                 else:
                     break
             channel = ''.join(channel)
-            self.stdout(channel, 'BH')
+            self.stdout(channel, 'ERR')
             log.error('Invalid input <%s>', line)
         else:
             self.process(url, channel)
