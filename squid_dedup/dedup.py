@@ -16,18 +16,23 @@ class Dedup:
     def __init__(self, config, exiting):
         self.config = config
         self._exiting = exiting
+        self._cache = {}
 
     def stdout(self, *args):
         print(*args, sep = ' ', flush = True)
 
     def parse(self, url):
-        for name, section in self.config.section_dict.items():
-            #log.trace('Dedup.parse: match: %s', section.match)
-            for match, regexp in section.match:
-                repl, n = regexp.subn(section.replace, url)
-                if n:
-                    #log.trace('Dedup.parse: %s matched: %s', match, repl)
-                    return repl
+        try:
+            return self._cache[url]
+        except KeyError:
+            for name, section in self.config.section_dict.items():
+                #log.trace('Dedup.parse: match: %s', section.match)
+                for match, regexp in section.match:
+                    repl, n = regexp.subn(section.replace, url)
+                    if n:
+                        #log.trace('Dedup.parse: %s matched: %s', match, repl)
+                        self._cache[url] = repl
+                        return repl
 
     def process(self, url, channel = None):
         args = []
