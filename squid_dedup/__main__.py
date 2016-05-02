@@ -64,11 +64,10 @@ class Main(object):
     def shutdown(self, sig = None, _ = None):
         log.debug('Main.shutdown(%s, sig: %s)', os.getpid(), sig)
         self._exiting = True
-        self._config.fetch_queue.join()
-        for t in range(self._config.fetch_threads):
-            self._config.fetch_queue.put(None)
         for t in self._threads:
-            t.join()
+            t.stop()
+        for t in self._threads:
+            t.join(0.1)
         # forced exit
         os._exit(3)
 
