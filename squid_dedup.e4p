@@ -19,6 +19,7 @@
     <Source>squid_dedup/__main__.py</Source>
     <Source>squid_dedup/config.py</Source>
     <Source>squid_dedup/dedup.py</Source>
+    <Source>squid_dedup/fetch.py</Source>
     <Source>squid_dedup/lib/__init__.py</Source>
     <Source>squid_dedup/lib/configfile.py</Source>
     <Source>squid_dedup/lib/frec.py</Source>
@@ -30,7 +31,6 @@
     <Source>squid_dedup/test/test_configfile.py</Source>
     <Source>squid_dedup/test/test_frec.py</Source>
     <Source>squid_dedup/test/test_record.py</Source>
-    <Source>squid_dedup/worker.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
