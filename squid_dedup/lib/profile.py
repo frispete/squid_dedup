@@ -18,7 +18,7 @@ from string import Template
 
 def profile(fn = None, sorting = 'cumulative'):
     """conditional profiling decorator function
-       this is testing for a self.config.profile attribute of the wrapped method,
+       this is testing for a self._config.profile attribute of the wrapped method,
        most useful for Process.run methods, as those cannot be profiled easily, otherwise.
        fn is a filename or None for printing stats to stdout, it will be saved to config.profiledir
        fn may contain $date and $time macros, and will have .pstats extension appended, if missing
@@ -26,7 +26,7 @@ def profile(fn = None, sorting = 'cumulative'):
     """
     def wrapper(f):
         def wrapped_f(*args, **kwargs):
-            config = args[0].config
+            config = args[0]._config
             if config.profile:
                 pr = cProfile.Profile()
                 pr.enable()
