@@ -14,7 +14,7 @@ log = logging.getLogger('dedup')
 
 class Dedup:
     def __init__(self, config, exiting):
-        self.config = config
+        self._config = config
         self._exiting = exiting
         self._cache = {}
 
@@ -25,7 +25,7 @@ class Dedup:
         try:
             return self._cache[url]
         except KeyError:
-            for name, section in self.config.section_dict.items():
+            for name, section in self._config.section_dict.items():
                 #log.trace('Dedup.parse: match: %s', section.match)
                 for match, regexp in section.match:
                     repl, n = regexp.subn(section.replace, url)
@@ -51,7 +51,7 @@ class Dedup:
                 log.info('URL <%s> rewritten: <%s>', url, newurl)
             else:
                 log.info('URL <%s> rewritten: <%s> (ch: %s)', url, newurl, channel)
-            self.config.url_set.add(url)
+            self._config.fetch_queue.put(url)
         else:
             if channel is None:
                 log.debug('URL <%s> ignored', url)
