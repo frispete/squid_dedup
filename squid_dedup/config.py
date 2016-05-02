@@ -2,7 +2,8 @@
 # -*- coding: utf8 -*
 """
 Synopsis:
-    %(appname)s
+    %(appname)s is a squid proxy helper, helping to reduce cache misses
+    when identical content is accessed using different URLs (e.g. CDN)
 
 Usage: %(appname)s [-%(_cmdlin_options)s]%(_cmdlin_parmsg)s
        -h, --help           this text
@@ -15,19 +16,39 @@ Usage: %(appname)s [-%(_cmdlin_options)s]%(_cmdlin_parmsg)s
                             [default: %(_loglevel_str)s]
        -s, --syslog=level   specify syslog log level
                             [default: %(_sysloglevel_str)s]
-       -c, --cfgfile=file   main config file
+       -c, --cfgfile=file   primary config file
        -i, --include=match  comma separated list of additional config files
+       -I, --intdomain=dom  internal domain [default: %(intdomain)s]
        -p, --profile        enable profiling code
        -x, --extract        extract config file
 
-If a config file is specified, this file must exist, otherwise built-in
-defaults are used. For additional _sections_, a list of globbing args
+Description:
+URL patterns, specified in config files, are rewritten to an presumably
+unique internal address. Further accesses, modified in the same way, map
+to the already stored object, even if it is using a different URL.
+
+This helper implements the squid StoreID protocol.
+
+If a primary config file is specified, this file must exist, otherwise built-
+in defaults are used. For additional _sections_, a list of globbing args
 is evaluated: %(_include_list)s.
 
 By default, only errors and warnings are logged.
 Available log levels are: %(_loglevel_list)s
 
 Profiling files are written to %(profiledir)s
+
+Installation:
+
+Add similar values to a squid config file:
+
+# adjust refresh patterns
+refresh_pattern ^http://([a-zA-Z0-9\-]+)\.squid\.internal/.*  10080 80% 79900 \\
+                override-lastmod override-expire ignore-reload \\
+                ignore-must-revalidate ignore-private
+
+store_id_program %(appdir)s/%(appname)s
+store_id_children 40 startup=10 idle=5 concurrency=0
 
 Copyright: %(copyright)s
 License: %(license)s.
@@ -44,6 +65,9 @@ __builtin_cfg__ = """\
 # Config file for %(appname)s V.[%(version)s/%(verdate)s]
 
 [global]
+
+# internal squid domain
+intdomain: %(intdomain)s
 
 # worker delay (in seconds)
 worker_delay: %(worker_delay)s
@@ -64,17 +88,22 @@ sysloglevel: %(_sysloglevel_str)s
 profile: %(profile)s
 profiledir: %(profiledir)s
 
-[section1]
-key_a = value
-key_b = morevalue
+#[CDN]
+# match a list of of urls
+#match: url-regex1/(.*)
+#       url-regex2/(.*)
+#       url-regex3/(.*)
+# replace with an internal url: must result in a unique address
+#replace: url-repl.%%(intdomain)s/\\1
 
-[section2]
-key_c = othervalue
-key_d = differentvalue
+#[sourceforge]
+#match = ^http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
+#replace = http://dl.sourceforge.net.%%(intdomain)s/\\1
 
 """
 
 import os
+import re
 import sys
 import glob
 import getopt
@@ -124,6 +153,10 @@ class Config:
     copyright = __copyright__
     license = __license__
 
+    # internal domain
+    intdomain = 'squid.internal'
+
+    # delay worker loops
     worker_delay = 2
 
     pid = os.getpid()
@@ -160,6 +193,7 @@ class Config:
 
     primary_section = 'global'
     section_dict = OrderedDict()
+    url_set = set()
 
     _loglevel_str = None
     _sysloglevel_str = None
@@ -181,7 +215,8 @@ class Config:
         """load config files and process command line parameter"""
         super().__init__()
 
-        # transfer class vars to instance __dict__ for __repr__
+        # transfer class vars to instance __dict__
+        # for __repr__ and ConfigParser interpolation
         for attr, value in Config.__dict__.items():
             if not attr.startswith('__') and not callable(value):
                 self.__dict__[attr] = value
@@ -238,6 +273,8 @@ class Config:
             elif opt in ('-i', '--include'):
                 for arg in strsplit(par):
                     self.include.append(arg)
+            elif opt in ('-I', '--intdomain'):
+                self.intdomain = par
             elif opt in ('-p', '--profile'):
                 self.profile = True
             elif opt in ('-x', '--extract'):
@@ -258,7 +295,7 @@ class Config:
             for cfgfile in sorted(glob.glob(include)):
                 log.trace('read(%s)', cfgfile)
                 try:
-                    cf = configfile.ConfigFile(cfgfile)
+                    cf = configfile.ConfigFile(self.__dict__, cfgfile)
                 except configfile.ConfigFileError as e:
                     log.error(e)
                 self.process_aux_sections(cf)
@@ -266,7 +303,7 @@ class Config:
     def load_primary_config(self, cfgfile):
         log.trace('load_primary_config(%s)', cfgfile)
         try:
-            cf = configfile.ConfigFile(cfgfile)
+            cf = configfile.ConfigFile(self.__dict__, cfgfile)
         except configfile.ConfigFileError as e:
             log.critical(e)
             exit(2)
@@ -275,6 +312,10 @@ class Config:
 
     def process_primary_section(self, cf):
         log.trace('process_primary_section(%s)', cf.filename)
+
+        # internal domain
+        self.intdomain = cf.get(self.primary_section, 'intdomain', self.intdomain)
+
         # misc.
         self.worker_delay = cf.getint(self.primary_section, 'worker_delay',
                                       self.worker_delay)
@@ -318,11 +359,19 @@ class Config:
         log.trace('process_section(%s: %s)', section, cf.items(section))
         if section in self.section_dict:
             log.error('section [%s] already processed from %s: ignored',
-                      section, self.section_dict[section]._cfgfile)
+                      section, self.section_dict[section].cfgfile)
             return
-        rec = record.recordfactory('Section', **dict(cf.items(section)))
-        rec._cfgfile = cf.filename
-        self.section_dict[section] = rec
+        log.trace(self.__dict__)
+        match = cf.getlist(section, 'match', splitter = '\n', vars = self.__dict__)
+        match = [(arg, re.compile(arg, re.IGNORECASE)) for arg in match]
+        replace = cf.get(section, 'replace', vars = self.__dict__)
+        if match and replace:
+            par = dict(match = match, replace = replace, cfgfile = cf.filename)
+            rec = record.recordfactory('Section', **par)
+            self.section_dict[section] = rec
+        else:
+            log.error('invalid match/replace parameter in section [%s] of %s',
+                      section, cf.filename)
 
     def create_special_vars(self):
         self._include_list = strlist(self.include)
