@@ -60,7 +60,7 @@ logging._srcfile = None
 
 def logsetup(loglevel=logging.WARN, logfile=None, sysloglevel=None):
     #print('logsetup(%s, %s, %s)' % (loglevel, logfile, sysloglevel))
-    logformat = '%(asctime)s %(levelname)5s: [%(name)s] %(message)s'
+    logformat = '%(asctime)s.%(msecs)03d %(levelname)5s: [%(name)s] %(message)s'
     syslogformat = '%(name)s[%(process)d]: %(levelname)s: %(message)s'
     dateformat = '%Y-%m-%d %H:%M:%S'
 
