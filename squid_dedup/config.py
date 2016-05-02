@@ -95,11 +95,14 @@ profiledir: %(profiledir)s
 #       url-regex3/(.*)
 # replace with an internal url: must result in a unique address
 #replace: url-repl.%%(intdomain)s/\\1
+# fetch URLs (optional, default: False)
+# download full object, if clients load just byte ranges from multiple servers
+#fetch: False
 
 #[sourceforge]
-#match = ^http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
-#replace = http://dl.sourceforge.net.%%(intdomain)s/\\1
-
+#match: ^http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
+#replace: http://dl.sourceforge.net.%%(intdomain)s/\\1
+#fetch: True
 """
 
 import os
@@ -366,8 +369,12 @@ class Config:
         match = cf.getlist(section, 'match', splitter = '\n', vars = self.__dict__)
         match = [(arg, re.compile(arg, re.IGNORECASE)) for arg in match]
         replace = cf.get(section, 'replace', vars = self.__dict__)
+        fetch = cf.getbool(section, 'fetch', False)
         if match and replace:
-            par = dict(match = match, replace = replace, cfgfile = cf.filename)
+            par = dict(match = match,
+                       replace = replace,
+                       fetch = fetch,
+                       cfgfile = cf.filename)
             rec = record.recordfactory('Section', **par)
             self.section_dict[section] = rec
         else:
