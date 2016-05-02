@@ -17,7 +17,7 @@ log = logging.getLogger('process')
 class Process(multiprocessing.Process):
     def __init__(self, config, name = None):
         super(Process, self).__init__()
-        self.config = config
+        self._config = config
         self._exit = multiprocessing.Event()
         self._name = name or self.__class__.__name__
 
