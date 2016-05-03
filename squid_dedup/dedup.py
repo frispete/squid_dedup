@@ -7,30 +7,37 @@
 # StoreID redirector, see http://wiki.squid-cache.org/Features/StoreID
 
 import sys
+import select
 import logging
 
 log = logging.getLogger('dedup')
 
+DEDUP_TIMEOUT = 0.3
 
 class Dedup:
-    def __init__(self, config, exiting):
+    """ deduplicate squid proxy urls """
+    def __init__(self, config):
         self._config = config
-        self._exiting = exiting
+        self._exiting = False
         self._cache = {}
+
+    def exit(self):
+        self._exiting = True
 
     def stdout(self, *args):
         print(*args, sep = ' ', flush = True)
 
     def parse(self, url):
+        # note: side effect of caching: the url isn't put into the fetch queue
         try:
             return self._cache[url]
         except KeyError:
             for name, section in self._config.section_dict.items():
-                #log.trace('Dedup.parse: match: %s', section.match)
+                #log.trace('parse: match: %s', section.match)
                 for match, regexp in section.match:
                     repl, n = regexp.subn(section.replace, url)
                     if n:
-                        #log.trace('Dedup.parse: %s matched: %s', match, repl)
+                        #log.trace('parse: %s matched: %s', match, repl)
                         self._cache[url] = repl
                         if section.fetch:
                             self._config.fetch_queue.put(url)
@@ -64,7 +71,7 @@ class Dedup:
             url, options = line.split(maxsplit = 1)
         except ValueError:
             self.stdout('ERR')
-            log.error('Invalid input <%s>', line)
+            log.error('invalid input <%s>', line)
         else:
             self.process(url)
 
@@ -80,20 +87,22 @@ class Dedup:
                     break
             channel = ''.join(channel)
             self.stdout(channel, 'ERR')
-            log.error('Invalid input <%s>', line)
+            log.error('invalid input <%s>', line)
         else:
             self.process(url, channel)
 
-    def __call__(self):
-        # we're explicitly using readline here,
-        # since it gives line buffered input
-        line = sys.stdin.readline()
-        if line:
-            if line[-1] == '\n':
-                line = line[:-1]
-            if line and line[0].isdigit():
-                self.concurrent(line)
-            else:
-                self.serial(line)
-            return True
-        return False
+    def run(self):
+        log.debug('running')
+        while not self._exiting:
+            if sys.stdin in select.select([sys.stdin], [], [], DEDUP_TIMEOUT)[0]:
+                # we're explicitly using readline here,
+                # since it gives us line buffered input
+                line = sys.stdin.readline()
+                if line:
+                    if line[-1] == '\n':
+                        line = line[:-1]
+                    if line and line[0].isdigit():
+                        self.concurrent(line)
+                    else:
+                        self.serial(line)
+        log.debug('finished')
