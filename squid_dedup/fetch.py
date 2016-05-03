@@ -37,7 +37,7 @@ class Fetch:
             except urllib.error.URLError as e:
                 log.error('%s: open <%s> failed: %s', name, url, e)
             else:
-                log.trace('%s: %s', self._name, response.info())
+                log.trace('%s: %s', name, response.info())
                 while not self._exiting:
                     try:
                         data = response.read(BLOCKSIZE)
