@@ -7,10 +7,12 @@
 
 import os
 import sys
+import time
 import signal
 import locale
 import logging
 import traceback
+import threading
 
 log = logging.getLogger('main')
 
@@ -18,72 +20,87 @@ from config import Config
 from dedup import Dedup
 from fetch import Fetch
 
+MAIN_DELAY = 0.5
+JOIN_TIMEOUT = 1.0
+
 class Main(object):
-    def __init__(self, config):
-        # termination signals
-        try:
-            for s in (signal.SIGINT, signal.SIGQUIT, signal.SIGTERM):
-                signal.signal(s, self.shutdown)
-        except AttributeError:
-            pass
-
-        # ignore signals
-        try:
-            for s in (signal.SIGHUP, signal.SIGPIPE):
-                signal.signal(s, signal.SIG_IGN)
-        except AttributeError:
-            pass
-
-        log.trace('Main(%s)', config)
-        self._config = config
-        self._loglevel = config.loglevel
+    def __init__(self):
+        # process command line options and load config files
+        self._config = Config()
         self._threads = []
         self._exiting = False
+        self._reload = False
+
+        # signal handling
+        for sig, action in (
+            (signal.SIGINT, self.shutdown),
+            (signal.SIGQUIT, self.shutdown),
+            (signal.SIGTERM, self.shutdown),
+            (signal.SIGHUP, lambda s, f: setattr(self, '_reload', True)),
+            (signal.SIGPIPE, signal.SIG_IGN),
+        ):
+            try:
+                signal.signal(sig, action)
+            except AttributeError:
+                pass
+
+        log.trace(self._config)
+
+    def shutdown(self, sig = None, frame = None):
+        log.debug('shutdown(%s, sig: %s)', os.getpid(), sig)
+        self._exiting = True
+        self.stop_threads()
+
+    def start_threads(self):
+        log.debug('start_threads')
+        # dedup thread
+        dedup = Dedup(self._config)
+        t = threading.Thread(target = dedup.run, daemon = True)
+        t.start()
+        self._threads.append((dedup, t))
+
+        # fetcher threads
+        for i in range(self._config.fetch_threads):
+            fetch = Fetch(self._config, self._config.fetch_queue)
+            t = threading.Thread(target = fetch.run, args = (t.name, ), daemon = True)
+            t.start()
+            self._threads.append((fetch, t))
+
+    def stop_threads(self):
+        log.debug('stop_threads')
+        for p, t in self._threads:
+            p.exit()
+        for p, t in self._threads:
+            t.join(timeout = JOIN_TIMEOUT)
+        self._threads = []
 
     def run(self):
         """ main loop """
         ret = 0
-        log.info('Main.run(%s)', os.getpid())
-
-        if 1:
-            for i in range(self._config.fetch_threads):
-                fetch = Fetch(self._config.fetch_queue)
-                fetch.start()
-                self._threads.append(fetch)
-
-        dedup = Dedup(self._config, self._exiting)
+        log.info('running (%s)', os.getpid())
+        self.start_threads()
         while not self._exiting:
-            if not dedup():
-                break
-
-        self.shutdown()
-
-        log.info('Main.run() finished', )
+            time.sleep(MAIN_DELAY)
+            if self._reload:
+                self.stop_threads()
+                self._config.reload()
+                self.start_threads()
+                log.trace(self._config)
+                self._reload = False
+        log.info('finished')
         return ret
-
-    def shutdown(self, sig = None, _ = None):
-        log.debug('Main.shutdown(%s, sig: %s)', os.getpid(), sig)
-        self._exiting = True
-        for t in self._threads:
-            t.stop()
-        for t in self._threads:
-            t.join(0.1)
-        # forced exit
-        os._exit(3)
 
 
 if __name__ == '__main__':
     # set C locale
     locale.setlocale(locale.LC_ALL, 'C')
     os.environ['LANG'] = 'C'
-
-    # process command line options and load config files
-    config = Config()
-
     ret = 0
     try:
-        main = Main(config)
+        main = Main()
         ret = main.run()
+    except SystemExit:
+        pass
     except KeyboardInterrupt:
         log.info('terminated by ^C')
         ret = 4
@@ -92,5 +109,4 @@ if __name__ == '__main__':
         log.error('internal error: %s',
             ''.join(traceback.format_exception(exc_type, exc_value, tb)))
         ret = 8
-
     sys.exit(ret)
