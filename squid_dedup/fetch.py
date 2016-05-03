@@ -8,47 +8,44 @@ import queue
 import urllib
 import urllib.request
 import logging
-import threading
 
 log = logging.getLogger('fetch')
 
 BLOCKSIZE = 8192
+QUEUE_TIMEOUT = 0.5
 
-class Fetch(threading.Thread):
+class Fetch:
     """ fetch objects from queue """
-    def __init__(self, queue):
+    def __init__(self, config, queue):
+        self._config = config
         self._queue = queue
-        super().__init__()
-        self._stop_event = threading.Event()
-        self.setDaemon(True)
+        self._exiting = False
 
-    def stop(self):
-        self._stop_event.set()
+    def exit(self):
+        self._exiting = True
 
-    def stopped(self):
-        return self._stop_event.isSet()
-
-    def run(self):
-        while not self.stopped():
+    def run(self, name):
+        log.debug('%s: running', name)
+        while not self._exiting:
             try:
-                url = self._queue.get(timeout = 0.5)
+                url = self._queue.get(timeout = QUEUE_TIMEOUT)
             except queue.Empty:
                 continue
-            log.debug('%s: fetch <%s>', self.name, url)
+            log.debug('%s: <%s>', name, url)
             try:
                 response = urllib.request.urlopen(url)
             except urllib.error.URLError as e:
-                log.error('open <%s> failed: %s', url, e)
+                log.error('%s: open <%s> failed: %s', name, url, e)
             else:
-                log.trace(response.info())
-                while not self.stopped():
+                log.trace('%s: %s', self._name, response.info())
+                while not self._exiting:
                     try:
                         data = response.read(BLOCKSIZE)
                     except Exception as e:
-                        log.error('read <%s> failed: %s', url, e)
+                        log.error('%s: read <%s> failed: %s', name, url, e)
                     else:
                         if not data:
                             break
-                if not self.stopped():
-                    log.info('fetched <%s>', url)
-        log.debug('%s: fetch stopped', self.name)
+                if not self._exiting:
+                    log.info('%s: <%s> fetched', name, url)
+        log.debug('%s: finished', name)
