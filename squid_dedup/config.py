@@ -55,7 +55,7 @@ License: %(license)s.
 """
 
 __version__ = '0.0.1'
-__verdate__ = '20160425'
+__verdate__ = '20160503'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __copyright__ = '(c)2016 ' + __author__
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
@@ -69,7 +69,7 @@ __builtin_cfg__ = """\
 # internal squid domain
 intdomain: %(intdomain)s
 
-# fetch url thread count
+# url fetcher thread count
 fetch_threads: %(fetch_threads)s
 
 # Comma separated list of additional config file patterns
@@ -89,18 +89,18 @@ profile: %(profile)s
 profiledir: %(profiledir)s
 
 #[CDN]
-# match a list of of urls
-#match: url-regex1/(.*)
-#       url-regex2/(.*)
-#       url-regex3/(.*)
-# replace with an internal url: must result in a unique address
-#replace: url-repl.%%(intdomain)s/\\1
-# fetch URLs (optional, default: False)
-# download full object, if clients load just byte ranges from multiple servers
+## match a list of of urls
+#match: http:\/\/url-regex-1/(.*)
+#       http:\/\/url-regex-2/(.*)
+#       http:\/\/url-regex-3/(.*)
+## replace with an internal url: must result in a unique address
+#replace: http:\/\/url-repl.%%(intdomain)s/\\1
+## fetch URLs (optional, default: False)
+## useful for clients, that fetch byte ranges only from multiple sources
 #fetch: false
 
 #[sourceforge]
-#match: ^http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
+#match: http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
 #replace: http://dl.sourceforge.net.%%(intdomain)s/\\1
 #fetch: true
 """
@@ -194,11 +194,11 @@ class Config:
     profiledir = os.path.join(appdir, 'profiles')
 
     # internal
-
     primary_section = 'global'
     section_dict = OrderedDict()
     fetch_queue = queue.Queue()
 
+    _cfgfile = None
     _loglevel_str = None
     _sysloglevel_str = None
 
@@ -287,27 +287,22 @@ class Config:
 
         if self.profile and not os.path.exists(self.profiledir):
             os.makedirs(self.profiledir)
-
         logsetup.logsetup(self.loglevel, self.logfile, self.sysloglevel)
-
         log.trace('logsetup(logfile: %s, loglevel: %s, sysloglevel: %s)',
                   self.logfile, self.loglevel, self.sysloglevel)
+        self.load_aux_config()
 
-        # load auxiliary config files
-        for include in self.include:
-            log.trace('include(%s)', include)
-            for cfgfile in sorted(glob.glob(include)):
-                log.trace('read(%s)', cfgfile)
-                try:
-                    cf = configfile.ConfigFile(self.__dict__, cfgfile)
-                except configfile.ConfigFileError as e:
-                    log.error(e)
-                self.process_aux_sections(cf)
+    def reload(self):
+        self.section_dict = OrderedDict()
+        if self._cfgfile is not None:
+            self.load_primary_config(self._cfgfile)
+        self.load_aux_config()
 
     def load_primary_config(self, cfgfile):
+        self._cfgfile = cfgfile
         log.trace('load_primary_config(%s)', cfgfile)
         try:
-            cf = configfile.ConfigFile(self.__dict__, cfgfile)
+            cf = configfile.ConfigFile(self.defaults(), cfgfile)
         except configfile.ConfigFileError as e:
             log.critical(e)
             exit(2)
@@ -316,37 +311,42 @@ class Config:
 
     def process_primary_section(self, cf):
         log.trace('process_primary_section(%s)', cf.filename)
-
         # internal domain
         self.intdomain = cf.get(self.primary_section, 'intdomain', self.intdomain)
-
         # misc.
         self.fetch_threads = cf.getint(self.primary_section, 'fetch_threads',
                                        self.fetch_threads)
-
         # includes
         self.include = cf.getlist(self.primary_section, 'include', self.include)
-
         # logging
         self.logfile = cf.get(self.primary_section, 'logfile', self.logfile)
         self.loglevel = logsetup.loglevel(cf.get(self.primary_section, 'loglevel',
                                                  self.loglevel))
         self.sysloglevel = logsetup.loglevel(cf.get(self.primary_section, 'sysloglevel',
                                                     self.sysloglevel))
-
         # profiling
         self.profile = cf.getbool(self.primary_section, 'profile', self.profile)
         self.profiledir = cf.get(self.primary_section, 'profiledir', self.profiledir)
-
         # reset logging setup
         logsetup.logsetup(self.loglevel, self.logfile, self.sysloglevel)
-
         # check mandatory parameter
         #for var, msg in (
         #    ('attrib', 'no valid attrib defined'),
         #):
         #    if not getattr(self, var):
         #        exit(2, '%s: %s' % (self.appname, msg))
+
+    def load_aux_config(self):
+        # load auxiliary config files
+        for include in self.include:
+            log.trace('include(%s)', include)
+            for cfgfile in sorted(glob.glob(include)):
+                log.trace('read(%s)', cfgfile)
+                try:
+                    cf = configfile.ConfigFile(self.defaults(), cfgfile)
+                except configfile.ConfigFileError as e:
+                    log.error(e)
+                self.process_aux_sections(cf)
 
     def process_aux_sections(self, cf, primary = False):
         log.trace('process_aux_sections(%s, primary = %s)', cf.filename, primary)
@@ -365,10 +365,9 @@ class Config:
             log.error('section [%s] already processed from %s: ignored',
                       section, self.section_dict[section].cfgfile)
             return
-        log.trace(self.__dict__)
-        match = cf.getlist(section, 'match', splitter = '\n', vars = self.__dict__)
+        match = cf.getlist(section, 'match', splitter = '\n', vars = self.defaults())
         match = [(arg, re.compile(arg, re.IGNORECASE)) for arg in match]
-        replace = cf.get(section, 'replace', vars = self.__dict__)
+        replace = cf.get(section, 'replace', vars = self.defaults())
         fetch = cf.getbool(section, 'fetch', False)
         if match and replace:
             par = dict(match = match,
@@ -386,6 +385,13 @@ class Config:
         self._loglevel_list = strlist(logsetup.loglevel_list)
         self._loglevel_str = logsetup.loglevel_str(self.loglevel)
         self._sysloglevel_str = logsetup.loglevel_str(self.sysloglevel)
+
+    def defaults(self):
+        d = {}
+        for k, v in self.__dict__.items():
+            if not k.startswith('_') and isinstance(v, str):
+                d[k] = v
+        return d
 
     def builtin_cfg(self):
         self.create_special_vars()
