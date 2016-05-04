@@ -3,7 +3,7 @@
 """
 Synopsis:
     %(appname)s is a squid proxy helper, helping to reduce cache misses
-    when identical content is accessed using different URLs (e.g. CDN)
+    when identical content is accessed using different URLs (aka CDNs)
 
 Usage: %(appname)s [-%(_cmdlin_options)s]%(_cmdlin_parmsg)s
        -h, --help           this text
@@ -36,33 +36,30 @@ is evaluated: %(_include_list)s.
 By default, only errors and warnings are logged.
 Available log levels are: %(_loglevel_list)s
 
-Profiling files are written to %(profiledir)s
+Profiling data is written to %(profiledir)s
 
 Installation:
 
 Add similar values to a squid config file:
 
 # adjust refresh patterns
-refresh_pattern ^http://([a-zA-Z0-9\-]+)\.squid\.internal/.*  10080 80% 79900 \\
+refresh_pattern ^http://([a-zA-Z0-9\-]+)\.squid\.internal/.*  10080 80%% 79900 \\
                 override-lastmod override-expire ignore-reload \\
                 ignore-must-revalidate ignore-private
 
 store_id_program %(appdir)s/%(appname)s
 store_id_children 40 startup=10 idle=5 concurrency=0
-
-Copyright: %(copyright)s
-License: %(license)s.
 """
 
 __version__ = '0.0.1'
-__verdate__ = '20160503'
+__verdate__ = '2016-05-04'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __copyright__ = '(c)2016 ' + __author__
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
 
 
 __builtin_cfg__ = """\
-# Config file for %(appname)s V.[%(version)s/%(verdate)s]
+# Config file for %(appname)s v[%(version)s/%(verdate)s]
 
 [global]
 
@@ -201,7 +198,6 @@ class Config:
     _cfgfile = None
     _loglevel_str = None
     _sysloglevel_str = None
-
     _include_list = None
     _loglevel_list = None
 
@@ -393,16 +389,16 @@ class Config:
                 d[k] = v
         return d
 
-    def builtin_cfg(self):
-        self.create_special_vars()
-        return __builtin_cfg__ % self.__dict__
-
     def write_cfgfile(self, cfgfile, cfg):
         if os.path.exists(cfgfile):
             os.rename(cfgfile, cfgfile + '~')
             stderr('keep old %s as %s~' % (cfgfile, cfgfile))
         open(cfgfile, 'w').write(cfg)
         stderr('config written to: %s' % cfgfile)
+
+    def builtin_cfg(self):
+        self.create_special_vars()
+        return __builtin_cfg__ % self.__dict__
 
     def usage(self):
         self.create_special_vars()
