@@ -69,8 +69,15 @@ __builtin_cfg__ = """\
 # internal squid domain
 intdomain: %(intdomain)s
 
+# proxy server
+http_proxy: %(http_proxy)s
+https_proxy: %(https_proxy)s
+
 # url fetcher thread count
 fetch_threads: %(fetch_threads)s
+
+# fetch delay (in seconds)
+fetch_delay: %(fetch_delay)s
 
 # Comma separated list of additional config file patterns
 include: %(_include_list)s
@@ -160,8 +167,15 @@ class Config:
     # internal domain
     intdomain = 'squid.internal'
 
-    # delay fetch loops
-    fetch_threads = 2
+    # proxy server
+    http_proxy = 'localhost:3128'
+    https_proxy = 'localhost:3128'
+
+    # number of fetcher threads
+    fetch_threads = 5
+
+    # fetch delay in seconds
+    fetch_delay = 15
 
     pid = os.getpid()
     hostname = socket.getfqdn()
@@ -311,9 +325,15 @@ class Config:
         log.trace('process_primary_section(%s)', cf.filename)
         # internal domain
         self.intdomain = cf.get(self.primary_section, 'intdomain', self.intdomain)
-        # misc.
+        # proxy server
+        self.http_proxy = cf.get(self.primary_section, 'http_proxy', self.http_proxy)
+        self.https_proxy = cf.get(self.primary_section, 'https_proxy', self.https_proxy)
+        # number of fetcher threads
         self.fetch_threads = cf.getint(self.primary_section, 'fetch_threads',
                                        self.fetch_threads)
+        # fetch delay in seconds
+        self.fetch_delay = cf.getint(self.primary_section, 'fetch_delay',
+                                     self.fetch_delay)
         # includes
         self.include = cf.getlist(self.primary_section, 'include', self.include)
         # logging
