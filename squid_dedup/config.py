@@ -40,15 +40,18 @@ Profiling data is written to %(profiledir)s
 
 Installation:
 
-Add similar values to a squid config file:
+Add similar values to a squid config file
+Note: these parameter store deduplicated objects aggressively:
 
-# adjust refresh patterns
-refresh_pattern ^http://([a-zA-Z0-9\-]+)\.squid\.internal/.*  10080 80%% 79900 \\
-                override-lastmod override-expire ignore-reload \\
-                ignore-must-revalidate ignore-private
+# refresh pattern for StoreID deduplicated objects
+# 10080 min: 7 days
+# 525600 min: 1 year
+refresh_pattern ^http://([a-zA-Z0-9\-\.]+)\.squid\.internal/.*  10080 80% 525600 \
+                override-expire override-lastmod ignore-reload ignore-no-store \
+                ignore-private refresh-ims ignore-must-revalidate
 
 store_id_program %(appdir)s/%(appname)s
-store_id_children 40 startup=10 idle=5 concurrency=0
+store_id_children 10 startup=5 idle=3 concurrency=0
 """
 
 __version__ = '0.0.1'
@@ -162,7 +165,7 @@ class Config:
 
     pid = os.getpid()
     hostname = socket.getfqdn()
-    if hostname.endswith('.lisa.loc'):
+    if hostname in ('xrated.lisa.loc', 'pitu5.lisa.loc'):
         TESTING = True
     else:
         TESTING = False
@@ -170,20 +173,19 @@ class Config:
 
     # additional config files
     if TESTING:
-        include = [os.path.join('.', 'conf', '*.conf'),
-                   os.path.join(os.sep, 'etc', appname, '*.conf')]
+        include = [os.path.join('.', 'conf', '*.conf'),]
     else:
         include = [os.path.join('~', '.' + appname, '*.conf'),
-                   os.path.join(os.sep, 'etc', appname, '*.conf')]
+                   os.path.join(os.sep, 'etc', 'squid', 'dedup', '*.conf'),]
 
     # logging
     if TESTING:
         logfile = '-'
-        loglevel = logging.WARNING
+        loglevel = logging.TRACE
         sysloglevel = None
     else:
-        logfile = os.path.join(os.sep, 'var', 'log', appname + '.log')
-        loglevel = logging.WARNING
+        logfile = os.path.join(os.sep, 'var', 'log', 'squid', 'dedup.log')
+        loglevel = logging.INFO
         sysloglevel = logging.ERROR
 
     # profiling
