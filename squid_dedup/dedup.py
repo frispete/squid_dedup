@@ -34,11 +34,11 @@ class Dedup:
         except KeyError:
             for name, section in self._config.section_dict.items():
                 for match, regexp in section.match:
-                    repurl, n = regexp.subn(section.replace, url)
+                    newurl, n = regexp.subn(section.replace, url)
                     if n:
-                        #log.trace('parse: %s matched: %s', match, repurl)
-                        self._cache[url] = (section, repurl)
-                        return (section, repurl), False
+                        #log.trace('parse matched: %s: replacement: %s', match, newurl)
+                        self._cache[url] = (section, newurl)
+                        return (section, newurl), False
 
     def process(self, channel, url, options):
         #log.trace('process: channel %s, url: %s, options: %s', channel, url, options)
@@ -46,34 +46,35 @@ class Dedup:
         if channel is not None:
             args.append(channel)
         try:
-            (section, repurl), cached = self.parse(url)
+            (section, newurl), cached = self.parse(url)
         except TypeError:
-            repurl = None
-        if repurl:
+            newurl = None
+        if newurl:
             # rewrite URL
-            args.extend(('OK', 'store-id=' + repurl))
+            args.extend(('OK', 'store-id=' + newurl))
         else:
             # no error: just no rewrite
             args.append('ERR')
         # get the reply out of the door as quickly as possible
         self.stdout(*args)
+        log.trace('out: %s', ' '.join(args))
         # optional processing and logging
         if log.isEnabledFor(logging.INFO):
             msg = []
             if channel is not None:
                 msg.append('channel ' + channel)
-            if repurl is not None:
-                msg.append('URL <%s> replaced with <%s>' % (url, repurl))
+            if newurl is not None:
+                msg.append('URL <%s> replaced with <%s>' % (url, newurl))
                 _log = log.info
             else:
                 msg.append('URL <%s> ignored' % url)
                 _log = log.debug
             if options:
-                msg.append('options <' + ' '.join(options)) + '>'
+                msg.append('options <' + ' '.join(options) + '>')
             _log(', '.join(msg))
         # delay feeding the fetcher up to this point
-        if repurl is not None and not cached and section.fetch:
-            self._config.fetch_queue.put(url)
+        if newurl is not None and not cached and section.fetch:
+            self._config.fetch_queue.put((newurl, url), block = False)
 
     def run(self):
         log.debug('running')
@@ -88,7 +89,7 @@ class Dedup:
                     url = None
                     channel = None
                     options = line.split()
-                    #log.trace('input: %s', options)
+                    #log.trace('in: %s', options)
                     try:
                         # pull out a decimal channel-ID, if available
                         if options[0].isdigit():
