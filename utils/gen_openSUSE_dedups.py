@@ -209,7 +209,7 @@ def gen_dedup(pagedata, pagefile, dedupfile, vars):
 [openSUSE]
 match:
     # openSUSE Headquarter
-    http://download.opensuse.org/(.*)
+    http\:\/\/[a-z0-9]+\.opensuse\.org\/(.*)
 ''' % vars)
         country = None
         for url, cc in urls:

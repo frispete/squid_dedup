@@ -13,7 +13,6 @@
   <Email>hpj@urpla.net</Email>
   <Eol index="-1"/>
   <Sources>
-    <Source>gen_openSUSE_redirects.py</Source>
     <Source>squid_dedup.py</Source>
     <Source>squid_dedup/__init__.py</Source>
     <Source>squid_dedup/__main__.py</Source>
@@ -31,6 +30,9 @@
     <Source>squid_dedup/test/test_configfile.py</Source>
     <Source>squid_dedup/test/test_frec.py</Source>
     <Source>squid_dedup/test/test_record.py</Source>
+    <Source>utils/gen_openSUSE_dedups.py</Source>
+    <Source>utils/gen_openSUSE_redirects.py</Source>
+    <Source>utils/update-date.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
@@ -38,7 +40,11 @@
   <Interfaces/>
   <Others>
     <Other>.gitignore</Other>
+    <Other>gen_openSUSE_dedups</Other>
+    <Other>gen_openSUSE_redirects</Other>
+    <Other>squid_dedup</Other>
     <Other>squid_dedup.conf</Other>
+    <Other>update-date</Other>
   </Others>
   <Vcs>
     <VcsType>Git</VcsType>
