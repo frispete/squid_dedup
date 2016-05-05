@@ -62,17 +62,17 @@ class Fetch:
             else:
                 # check, if object is cached already
                 header = response.info()
-                log.info('%s: %s\n%s', name, url, header)
+                log.trace('%s: %s\n%s', name, url, header)
                 try:
                     xcache = header['X-Cache']
                 except KeyError:
                     pass
                 else:
                     if xcache.startswith('HIT'):
-                        log.info('%s: %s is cached already', name, url)
+                        log.debug('%s: %s is cached already', name, url)
                         continue
                 # object isn't fetched already, do it now
-                log.info('%s: fetching %s', name, url)
+                log.debug('%s: fetching %s', name, url)
                 while not self._exiting:
                     try:
                         data = response.read(BLOCKSIZE)
