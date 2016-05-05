@@ -77,8 +77,8 @@ class gpar:
     force = False
     url = 'http://mirrors.opensuse.org/list/all.html'
     page = 'openSUSE-mirrors.html'
-    #dedup = '/etc/squid/dedup-opensuse.conf'
-    dedup = 'conf/dedup-opensuse.conf'
+    dedup = '/etc/squid/dedup/opensuse.conf'
+    #dedup = 'conf/dedup-opensuse.conf'
     replace = 'http://download.opensuse.org.%(intdomain)s/\\1'
     # internal
     url_timestamp = None
