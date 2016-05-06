@@ -91,7 +91,7 @@ class Main(object):
         return ret
 
 
-if __name__ == '__main__':
+def main():
     # set C locale
     locale.setlocale(locale.LC_ALL, 'C')
     os.environ['LANG'] = 'C'
@@ -110,3 +110,7 @@ if __name__ == '__main__':
             ''.join(traceback.format_exception(exc_type, exc_value, tb)))
         ret = 8
     sys.exit(ret)
+
+
+if __name__ == '__main__':
+    main()
