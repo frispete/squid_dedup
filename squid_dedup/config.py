@@ -30,7 +30,7 @@ stored objects, even if using different URLs.
 
 Global configuration options are specified in the primary config file, which
 must exist. A template can be created with the --extract command line switch in
-the current directory .
+the current directory.
 
 For additional _sections_, that specify arbitrary match/replacement values and
 some processing options, a list of config file globbing args is evaluated:
@@ -58,7 +58,7 @@ store_id_access allow all
 """
 
 __version__ = '0.0.1'
-__verdate__ = '2016-05-04'
+__verdate__ = '2016-05-06'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __copyright__ = '(c)2016 ' + __author__
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
