@@ -13,7 +13,7 @@ from setuptools import setup, find_packages
 pkgname = 'squid_dedup'
 version = None
 
-min_python = (3, 2)
+min_python = (3, 1)
 my_python = sys.version_info
 
 if my_python < min_python:
@@ -40,7 +40,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'squid_dedup = squid_dedup.__main__:main',
-            'gen_openSUSE_dedups = utils.gen_openSUSE_dedups:main',
+            'gen_openSUSE_dedups = squid_dedup.utils.gen_openSUSE_dedups:main',
         ],
     },
     include_package_data = True,
@@ -52,7 +52,10 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)'
         'Operating System :: POSIX',
-        'Programming Language :: Python :: 3 :: Only',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.1',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
