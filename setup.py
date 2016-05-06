@@ -39,7 +39,7 @@ setup(
     packages = find_packages(),
     entry_points = {
         'console_scripts': [
-            'squid_dedup = squid_dedup.__main__:main',
+            'squid_dedup = squid_dedup.main:main',
             'gen_openSUSE_dedups = squid_dedup.utils.gen_openSUSE_dedups:main',
         ],
     },
