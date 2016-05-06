@@ -52,6 +52,8 @@ class Fetch:
             log.debug('%s: %s, %s', name, newurl, url)
             if newurl in Fetch._done:
                 Fetch._done[newurl].add(url)
+                log.debug('%s: %s is fetched already: %s', name, url, newurl)
+                log.trace('%s: %s', Fetch._done[newurl])
                 continue
             Fetch._done[newurl].add(url)
             time.sleep(self._delay)
