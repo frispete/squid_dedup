@@ -68,7 +68,7 @@ multiline:
 
         # test exceptions
         self.assertRaises(configfile.ConfigFileError,
-                          configfile.ConfigFile, 'notexitent.conf')
+                          configfile.ConfigFile, filename = 'notexistent.conf')
         self.assertRaises(configfile.ConfigFileError,
                           cf.read, 'notexitent.conf')
         self.assertRaises(configfile.ConfigFileError,
