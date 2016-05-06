@@ -192,7 +192,7 @@ def extract(pagedata, pagefile):
 
 
 def generate(pagedata, pagefile, dedupfile, vars):
-    log.info('gen_dedup %s', dedupfile)
+    log.info('generate %s', dedupfile)
     urls = extract(pagedata, pagefile)
     if not urls:
         return 1
@@ -274,6 +274,9 @@ def main():
             gpar.dedup = par
         elif opt in ('-r', '--repl'):
             gpar.replace = par
+
+    if not os.path.exists(gpar.dedup):
+        gpar.force = True
 
     setup_logging(gpar.loglevel, gpar.logfile, gpar.syslog)
 
