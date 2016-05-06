@@ -195,7 +195,7 @@ class Config:
 
     # config files
     if TESTING:
-        cfgfile = os.path.join('.', os.sep, '%s.conf' % appname)
+        cfgfile = os.path.join('.', '%s.conf' % appname)
         include = [os.path.join('.', 'conf', '*.conf'),]
     else:
         cfgfile = os.path.join(os.sep, 'etc', 'squid', '%s.conf' % appname)
@@ -204,7 +204,7 @@ class Config:
     # logging
     if TESTING:
         logfile = '-'
-        loglevel = logging.TRACE
+        loglevel = logging.DEBUG
         sysloglevel = None
     else:
         logfile = os.path.join(os.sep, 'var', 'log', 'squid', 'dedup.log')
