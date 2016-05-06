@@ -16,22 +16,25 @@ Usage: %(appname)s [-%(_cmdlin_options)s]%(_cmdlin_parmsg)s
                             [default: %(_loglevel_str)s]
        -s, --syslog=level   specify syslog log level
                             [default: %(_sysloglevel_str)s]
-       -c, --cfgfile=file   primary config file
-       -i, --include=match  comma separated list of additional config files
-       -I, --intdomain=dom  internal domain [default: %(intdomain)s]
-       -p, --profile        enable profiling code
-       -x, --extract        extract config file
+       -c, --cfgfile=file   alternate primary config file
+                            [default: %(cfgfile)s]
+       -p, --protocol=file  log squid communication into file
+       -P, --profile        enable profiling code
+       -X, --extract        extract primary config file
 
 Description:
-URL patterns, specified in config files, are rewritten to an presumably
-unique internal address. Further accesses, modified in the same way, map
-to the already stored object, even if it is using a different URL.
+This helper implements the squid StoreID protocol, as found in squid 3 onwards.
+URL patterns, specified in config files, are rewritten to a presumably unique
+internal address. Further accesses, modified in the same way, map to already
+stored objects, even if using different URLs.
 
-This helper implements the squid StoreID protocol.
+Global configuration options are specified in the primary config file, which
+must exist. A template can be created with the --extract command line switch in
+the current directory .
 
-If a primary config file is specified, this file must exist, otherwise built-
-in defaults are used. For additional _sections_, a list of globbing args
-is evaluated: %(_include_list)s.
+For additional _sections_, that specify arbitrary match/replacement values and
+some processing options, a list of config file globbing args is evaluated:
+%(_include_list)s.
 
 By default, only errors and warnings are logged.
 Available log levels are: %(_loglevel_list)s
@@ -43,15 +46,15 @@ Installation:
 Add similar values to a squid config file
 Note: these parameter store deduplicated objects aggressively:
 
-# refresh pattern for StoreID deduplicated objects
-# 10080 min: 7 days
-# 525600 min: 1 year
-refresh_pattern ^http://([a-zA-Z0-9\-\.]+)\.squid\.internal/.*  10080 80% 525600 \
-                override-expire override-lastmod ignore-reload ignore-no-store \
-                ignore-private refresh-ims ignore-must-revalidate
-
 store_id_program %(appdir)s/%(appname)s
-store_id_children 10 startup=5 idle=3 concurrency=0
+store_id_children 20 startup=10 idle=5 concurrency=0
+
+acl metalink req_mime_type application/metalink4+xml
+store_id_access deny metalink
+
+acl getmethod method GET
+store_id_access deny !getmethod
+store_id_access allow all
 """
 
 __version__ = '0.0.1'
@@ -90,6 +93,9 @@ logfile: %(logfile)s
 
 # Log to syslog with this log level
 sysloglevel: %(_sysloglevel_str)s
+
+# Squid communication protocol log file
+protocol: %(protocol)s
 
 # profiling
 profile: %(profile)s
@@ -148,12 +154,14 @@ def strlist(list, joiner = ', '):
 
 class Config:
     """Central configuration class"""
-    # internal
     if __name__ == '__main__':
         # for testing purposes
         appdir, appname = '.', 'config'
     else:
-        appdir, appname = os.path.split(sys.argv[0])
+        # we want the appname from the symlink (if any)
+        # and the appdir from the real path
+        _, appname = os.path.split(sys.argv[0])
+        appdir, _ = os.path.split(os.path.realpath(sys.argv[0]))
     if appdir in ('', '.'):
         appdir = os.getcwd()
     if appname.endswith('.py'):
@@ -185,12 +193,13 @@ class Config:
         TESTING = False
     PRODUCTION = not TESTING
 
-    # additional config files
+    # config files
     if TESTING:
+        cfgfile = os.path.join('.', os.sep, '%s.conf' % appname)
         include = [os.path.join('.', 'conf', '*.conf'),]
     else:
-        include = [os.path.join('~', '.' + appname, '*.conf'),
-                   os.path.join(os.sep, 'etc', 'squid', 'dedup', '*.conf'),]
+        cfgfile = os.path.join(os.sep, 'etc', 'squid', '%s.conf' % appname)
+        include = [os.path.join(os.sep, 'etc', 'squid', 'dedup', '*.conf'),]
 
     # logging
     if TESTING:
@@ -202,6 +211,9 @@ class Config:
         loglevel = logging.INFO
         sysloglevel = logging.ERROR
 
+    # squid protocol
+    protocol = ''
+
     # profiling
     profile = False
     profiledir = os.path.join(appdir, 'profiles')
@@ -211,19 +223,18 @@ class Config:
     section_dict = OrderedDict()
     fetch_queue = queue.Queue()
 
-    _cfgfile = None
     _loglevel_str = None
     _sysloglevel_str = None
     _include_list = None
     _loglevel_list = None
 
     # command line parameter
-    _cmdlin_options = 'hVvqpx'
-    _cmdlin_paropt = 'l:L:s:c:i:'
-    _cmdlin_parmsg = '[-l log][-L loglvl][-s sysloglvl][-c cfg][-i inc,..]'
+    _cmdlin_options = 'hVvqPX'
+    _cmdlin_paropt = 'l:L:s:c:'
+    _cmdlin_parmsg = '[-l log][-L loglvl][-s sysloglvl][-c cfg]'
     _cmdlin_longopt = (
-        'help', 'version', 'verbose', 'quiet', 'logfile=', 'loglevel=', 'syslog=',
-        'cfgfile=', 'include=', 'profile', 'extract',
+        'help', 'version', 'verbose', 'quiet', 'logfile=', 'loglevel=',
+        'syslog=', 'cfgfile=', 'profile', 'extract',
     )
 
 
@@ -243,11 +254,6 @@ class Config:
                 self._cmdlin_options + self._cmdlin_paropt, self._cmdlin_longopt)
         except getopt.error as msg:
             exit(1, '%s: %s' % (self.appname, msg))
-
-        # reset any pre configured includes, if includes are specified
-        for opt, par in optlist:
-            if opt in ('-i', '--include'):
-                self.include = []
 
         if self.TESTING:
             logsetup.logsetup(logging.TRACE)
@@ -284,18 +290,14 @@ class Config:
                 else:
                     self.sysloglevel = ll
             elif opt in ('-c', '--cfgfile'):
-                # load primary config file immediately
-                self.load_primary_config(par)
-            elif opt in ('-i', '--include'):
-                for arg in strsplit(par):
-                    self.include.append(arg)
-            elif opt in ('-I', '--intdomain'):
-                self.intdomain = par
-            elif opt in ('-p', '--profile'):
+                self.cfgfile = par
+            elif opt in ('-P', '--profile'):
                 self.profile = True
-            elif opt in ('-x', '--extract'):
+            elif opt in ('-X', '--extract'):
                 self.write_cfgfile(self.appname + '.conf', self.builtin_cfg())
                 exit(0)
+
+        self.load_primary_config(self.cfgfile)
 
         if self.profile and not os.path.exists(self.profiledir):
             os.makedirs(self.profiledir)
@@ -306,12 +308,10 @@ class Config:
 
     def reload(self):
         self.section_dict = OrderedDict()
-        if self._cfgfile is not None:
-            self.load_primary_config(self._cfgfile)
+        self.load_primary_config(self.cfgfile)
         self.load_aux_config()
 
     def load_primary_config(self, cfgfile):
-        self._cfgfile = cfgfile
         log.trace('load_primary_config(%s)', cfgfile)
         try:
             cf = configfile.ConfigFile(self.defaults(), cfgfile)
@@ -342,17 +342,12 @@ class Config:
                                                  self.loglevel))
         self.sysloglevel = logsetup.loglevel(cf.get(self.primary_section, 'sysloglevel',
                                                     self.sysloglevel))
+        self.protocol = cf.get(self.primary_section, 'protocol', self.protocol)
         # profiling
         self.profile = cf.getbool(self.primary_section, 'profile', self.profile)
         self.profiledir = cf.get(self.primary_section, 'profiledir', self.profiledir)
         # reset logging setup
         logsetup.logsetup(self.loglevel, self.logfile, self.sysloglevel)
-        # check mandatory parameter
-        #for var, msg in (
-        #    ('attrib', 'no valid attrib defined'),
-        #):
-        #    if not getattr(self, var):
-        #        exit(2, '%s: %s' % (self.appname, msg))
 
     def load_aux_config(self):
         # load auxiliary config files
