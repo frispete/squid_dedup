@@ -31,12 +31,6 @@ writable for the user running the crontab, with decent permissions, e.g.:
 $ touch %(dedup)s
 $ chown user:group %(dedup)s
 $ chmod 644 %(dedup)s
-
-Copyright:
-(c)2016 by %(author)s
-
-License:
-%(license)s
 """
 #
 # vim:set et ts=8 sw=4:
