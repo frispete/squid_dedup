@@ -1,1 +1,1 @@
-squid_dedup/__main__.py
+squid_dedup/main.py
