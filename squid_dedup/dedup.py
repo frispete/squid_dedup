@@ -20,6 +20,7 @@ class Dedup:
         self._config = config
         self._exiting = False
         self._cache = {}
+        self._protocol = config.protocol
 
     def exit(self):
         self._exiting = True
@@ -67,7 +68,7 @@ class Dedup:
                 msg.append('URL <%s> replaced with <%s>' % (url, newurl))
                 _log = log.info
             else:
-                msg.append('URL <%s> ignored' % url)
+                msg.append('URL <%s> unchanged' % url)
                 _log = log.debug
             if options:
                 msg.append('options <' + ' '.join(options) + '>')
@@ -75,6 +76,7 @@ class Dedup:
         # delay feeding the fetcher up to this point
         if newurl is not None and not cached and section.fetch:
             self._config.fetch_queue.put((newurl, url), block = False)
+        return args
 
     def run(self):
         log.debug('running')
@@ -97,13 +99,19 @@ class Dedup:
                         # an URL must be available for a valid request
                         url = options.pop(0)
                     except IndexError:
+                        args = ['ERR']
                         if channel is not None:
-                            self.stdout(channel, 'ERR')
+                            args.insert(0, channel)
                             log.error('channel %s, invalid input <%s>', channel, line)
                         else:
-                            self.stdout('ERR')
                             log.error('invalid input <%s>', line)
+                        self.stdout(*args)
                     else:
                         # process tokens
-                        self.process(channel, url, options)
+                        args = self.process(channel, url, options)
+                    if self._protocol:
+                        try:
+                            open(self._protocol, 'a').write(line + '\n' + ' '.join(args) + '\n')
+                        except IOError as e:
+                            log.error('protocol logging error: %s', e)
         log.debug('finished')
