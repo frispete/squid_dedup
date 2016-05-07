@@ -29,8 +29,7 @@ internal address. Further accesses, modified in the same way, map to already
 stored objects, even if using different URLs.
 
 Global configuration options are specified in the primary config file, which
-must exist. A template can be created with the --extract command line switch in
-the current directory.
+must exist. A template can be created with --extract in the current directory.
 
 Command line switches take precedence over config file settings.
 
