@@ -32,6 +32,8 @@ Global configuration options are specified in the primary config file, which
 must exist. A template can be created with the --extract command line switch in
 the current directory.
 
+Command line switches take precedence over config file settings.
+
 For additional _sections_, that specify arbitrary match/replacement values and
 some processing options, a list of config file globbing args is evaluated:
 %(_include_list)s.
@@ -72,7 +74,7 @@ __builtin_cfg__ = """\
 # internal squid domain
 intdomain: %(intdomain)s
 
-# proxy server
+# proxy server (server:port)
 http_proxy: %(http_proxy)s
 https_proxy: %(https_proxy)s
 
@@ -81,6 +83,12 @@ fetch_threads: %(fetch_threads)s
 
 # fetch delay (in seconds)
 fetch_delay: %(fetch_delay)s
+
+# reload changed config files automatically (bool)
+auto_reload: %(auto_reload)s
+
+# Squid communication protocol log file (leave empty to disable)
+protocol: %(protocol)s
 
 # Comma separated list of additional config file patterns
 include: %(_include_list)s
@@ -91,13 +99,10 @@ loglevel: %(_loglevel_str)s
 # Log to this file (or to console, if unset or '-')
 logfile: %(logfile)s
 
-# Log to syslog with this log level
+# Log to syslog with this log level (see loglevel)
 sysloglevel: %(_sysloglevel_str)s
 
-# Squid communication protocol log file
-protocol: %(protocol)s
-
-# profiling
+# profiling (bool)
 profile: %(profile)s
 profiledir: %(profiledir)s
 
@@ -185,6 +190,12 @@ class Config:
     # fetch delay in seconds
     fetch_delay = 15
 
+    # reload changed config files automatically
+    auto_reload = True
+
+    # squid protocol
+    protocol = ''
+
     pid = os.getpid()
     hostname = socket.getfqdn()
     if hostname in ('xrated.lisa.loc', 'pitu5.lisa.loc'):
@@ -193,26 +204,24 @@ class Config:
         TESTING = False
     PRODUCTION = not TESTING
 
-    # config files
     if TESTING:
+        # config files
         cfgfile = os.path.join('.', '%s.conf' % appname)
+        cfgtime = None
         include = [os.path.join('.', 'conf', '*.conf'),]
-    else:
-        cfgfile = os.path.join(os.sep, 'etc', 'squid', '%s.conf' % appname)
-        include = [os.path.join(os.sep, 'etc', 'squid', 'dedup', '*.conf'),]
-
-    # logging
-    if TESTING:
+        # logging
         logfile = '-'
         loglevel = logging.DEBUG
         sysloglevel = None
     else:
+        # config files
+        cfgfile = os.path.join(os.sep, 'etc', 'squid', '%s.conf' % appname)
+        cfgtime = None
+        include = [os.path.join(os.sep, 'etc', 'squid', 'dedup', '*.conf'),]
+        # logging
         logfile = os.path.join(os.sep, 'var', 'log', 'squid', 'dedup.log')
         loglevel = logging.INFO
         sysloglevel = logging.ERROR
-
-    # squid protocol
-    protocol = ''
 
     # profiling
     profile = False
@@ -259,12 +268,25 @@ class Config:
             logsetup.logsetup(logging.TRACE)
 
         # process command line parameter
+        # 1st pass: exiting options and loading config file
         for opt, par in optlist:
             if opt in ('-h', '--help'):
                 exit(0, self.usage())
             elif opt in ('-V', '--version'):
                 exit(0, 'version %s/%s' % (self.version, self.verdate))
-            elif opt in ('-v', '--verbose'):
+            elif opt in ('-X', '--extract'):
+                self.write_cfgfile(self.appname + '.conf', self.builtin_cfg())
+                exit(0)
+            elif opt in ('-c', '--cfgfile'):
+                self.cfgfile = par
+
+        # load primary config file
+        self.load_primary_config(self.cfgfile)
+
+        # process command line parameter
+        # 2nd pass: options, that take precedence over config file options
+        for opt, par in optlist:
+            if opt in ('-v', '--verbose'):
                 if self.loglevel > logging.DEBUG:
                     self.loglevel -= 10
                 else:
@@ -289,15 +311,8 @@ class Config:
                     exit(1, '%s: invalid syslog level <%s>' % par)
                 else:
                     self.sysloglevel = ll
-            elif opt in ('-c', '--cfgfile'):
-                self.cfgfile = par
             elif opt in ('-P', '--profile'):
                 self.profile = True
-            elif opt in ('-X', '--extract'):
-                self.write_cfgfile(self.appname + '.conf', self.builtin_cfg())
-                exit(0)
-
-        self.load_primary_config(self.cfgfile)
 
         if self.profile and not os.path.exists(self.profiledir):
             os.makedirs(self.profiledir)
@@ -319,6 +334,7 @@ class Config:
             log.critical(e)
             exit(2)
         self.process_primary_section(cf)
+        self.cfgtime = os.stat(cfgfile).st_mtime
         self.process_aux_sections(cf, primary = True)
 
     def process_primary_section(self, cf):
@@ -332,8 +348,9 @@ class Config:
         self.fetch_threads = cf.getint(self.primary_section, 'fetch_threads',
                                        self.fetch_threads)
         # fetch delay in seconds
-        self.fetch_delay = cf.getint(self.primary_section, 'fetch_delay',
-                                     self.fetch_delay)
+        self.fetch_delay = cf.getint(self.primary_section, 'fetch_delay', self.fetch_delay)
+        self.auto_reload = cf.getbool(self.primary_section, 'auto_reload', self.auto_reload)
+        self.protocol = cf.get(self.primary_section, 'protocol', self.protocol)
         # includes
         self.include = cf.getlist(self.primary_section, 'include', self.include)
         # logging
@@ -342,7 +359,6 @@ class Config:
                                                  self.loglevel))
         self.sysloglevel = logsetup.loglevel(cf.get(self.primary_section, 'sysloglevel',
                                                     self.sysloglevel))
-        self.protocol = cf.get(self.primary_section, 'protocol', self.protocol)
         # profiling
         self.profile = cf.getbool(self.primary_section, 'profile', self.profile)
         self.profiledir = cf.get(self.primary_section, 'profiledir', self.profiledir)
@@ -386,12 +402,33 @@ class Config:
             par = dict(match = match,
                        replace = replace,
                        fetch = fetch,
-                       cfgfile = cf.filename)
+                       cfgfile = cf.filename,
+                       cfgtime = os.stat(cf.filename).st_mtime)
             rec = record.recordfactory('Section', **par)
             self.section_dict[section] = rec
         else:
             log.error('invalid match/replace parameter in section [%s] of %s',
                       section, cf.filename)
+
+    def check_sections_reload(self):
+        if self.check_cfgfile_reload(self.cfgfile, self.cfgtime):
+            return True
+        for name, section in self.section_dict.items():
+            if self.check_cfgfile_reload(section.cfgfile, section.cfgtime):
+                return True
+        return False
+
+    def check_cfgfile_reload(self, cfgfile, cfgtime):
+        try:
+            mtime = os.stat(cfgfile).st_mtime
+        except IOError as e:
+            log.error('auto_reload: stat failed: %s', e)
+            return True
+        else:
+            if mtime > cfgtime:
+                log.info('auto_reload: change detected in %s', cfgfile)
+                return True
+        return False
 
     def create_special_vars(self):
         self._include_list = strlist(self.include)
