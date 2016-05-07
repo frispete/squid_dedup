@@ -81,6 +81,9 @@ class Main(object):
         self.start_threads()
         while not self._exiting:
             time.sleep(MAIN_DELAY)
+            if self._config.auto_reload and self._config.check_sections_reload():
+                self._reload = True
+                log.info('reload config')
             if self._reload:
                 self.stop_threads()
                 self._config.reload()
