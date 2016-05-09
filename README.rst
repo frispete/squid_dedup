@@ -81,5 +81,4 @@ Credits
 
 The basic idea and a reference implementation in PHP was done from Per Jessen.
 
-    **Per, thank you for the valuable discussions on this topic.**
-
+**Per, thank you for the valuable discussions on this topic.**
