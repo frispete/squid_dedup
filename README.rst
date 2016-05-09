@@ -15,10 +15,11 @@ the current directory.
 
 CDN match/replacement parameter are specified in additional config files.
 
+
 Installation
 ------------
 
-Usual install::
+::
 
     $ python3 setup install
 
@@ -52,6 +53,37 @@ Add similar values to /etc/squid/squid.conf::
 
 That's it.
 
+
+Configuration
+-------------
+
+The primary configuration is located in /etc/squid/squid_dedup.conf,
+and defines the general behaviour.
+
+Additional config files should be stored in /etc/squid/dedup, e.g.::
+
+    [sourceforge]
+    match: http:\/\/[a-zA-Z0-9\-\_\.]+\.dl\.sourceforge\.net\/(.*)
+    replace: http://dl.sourceforge.net.%(intdomain)s/\1
+    fetch: false
+
+Here, any URL pointing to a sub domain of dl.sourceforge.net, is mapped to
+dl.sourceforge.net.%(intdomain)s, where %(intdomain)s is replaced according
+to the value of intdomain in /etc/squid/squid_dedup.conf.
+
+match is a list of regular expressions matching URLs, separated by newlines,
+with all subsequent URLs indented.
+
+replace is a single replacement value.
+
+fetch is an optional boolean flag. If fetch is enabled, the object is fetched
+also (with a certain delay). This is useful for clients, that download byte
+ranges only from multiple sources. That behavior results in uncachable objects
+otherwise. Care is taken for not fetching objects more than once.
+
+Changes to the config files result in an automatic reload by default.
+
+
 Watch
 -----
 
@@ -59,10 +91,10 @@ You might want to increase the log level in /etc/squid/squid_dedup.conf.::
 
     $ less +F /var/log/squid/dedup.log
 
+
 Notes
 -----
 
-Changes to the config files result in a reload by default.
 The gen_openSUSE_dedups utility is meant to be executed as a user by
 crontab, e.g.::
 
@@ -75,6 +107,7 @@ crontab, e.g.::
 Add a line similar to::
 
     0 6 * * * /usr/bin/gen_openSUSE_dedups -vs
+
 
 Credits
 -------
