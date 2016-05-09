@@ -27,11 +27,14 @@ for line in open(os.path.join(pkgname, 'config.py')):
         break
 assert version
 
+with open('README.rst', 'r') as fd:
+    long_description = fd.read()
 
 setup(
     name = pkgname,
     version = version,
     description = 'A squid 3 proxy helper for deduplicating CDN accesses',
+    long_description = long_description,
     author = 'Hans-Peter Jansen',
     author_email = 'hpj@urpla.net',
     url = 'https://github.com/frispete/squid_dedup',
