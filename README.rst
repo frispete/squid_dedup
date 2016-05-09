@@ -21,7 +21,7 @@ Installation
 
 ::
 
-    $ python3 setup install
+    $ python3 setup.py install
 
 Create directory for custom config files::
 
