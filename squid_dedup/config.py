@@ -58,8 +58,8 @@ store_id_access deny !getmethod
 store_id_access allow all
 """
 
-__version__ = '0.0.1'
-__verdate__ = '2016-05-06'
+__version__ = '0.0.2'
+__verdate__ = '2016-05-09'
 __author__ = 'Hans-Peter Jansen <hpj@urpla.net>'
 __copyright__ = '(c)2016 ' + __author__
 __license__ = 'GNU GPL 2 - see http://www.gnu.org/licenses/gpl2.txt for details'
