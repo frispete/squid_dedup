@@ -127,10 +127,10 @@ def fetch(url, pagefile, force):
         log.error('open (%s failed: %s', url, e)
         return FETCH_ERR, None
     else:
+        log.debug('\n' + response.info())
         # last modification as unix timestamp
         lm = email.utils.parsedate_tz(response.info()['Last-Modified'])
         ts = email.utils.mktime_tz(lm)
-        log.debug(response.info())
 
         if force or mtime is None or ts > mtime:
             log.debug('read %s', url)
