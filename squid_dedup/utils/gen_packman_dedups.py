@@ -120,7 +120,7 @@ def fetch(url, pagefile):
         log.error('open (%s failed: %s', url, e)
         return FETCH_ERR, None
     else:
-        log.debug('\n' + response.info())
+        log.debug('http header\n%s', response.info())
         # packman has no last-modified header, fetch every time
         log.debug('read %s', url)
         try:

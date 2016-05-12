@@ -127,7 +127,7 @@ def fetch(url, pagefile, force):
         log.error('open (%s failed: %s', url, e)
         return FETCH_ERR, None
     else:
-        log.debug('\n' + response.info())
+        log.debug('http header\n%s', response.info())
         # last modification as unix timestamp
         lm = email.utils.parsedate_tz(response.info()['Last-Modified'])
         ts = email.utils.mktime_tz(lm)
