@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Author: Hans-Peter Jansen <hpj@urpla.net>
@@ -9,6 +10,7 @@ import re
 import sys
 
 from setuptools import setup, find_packages
+from install_symlinked_scripts import install_symlinked_scripts
 
 pkgname = 'squid_dedup'
 version = None
@@ -30,6 +32,10 @@ assert version
 with open('README.rst', 'r') as fd:
     long_description = fd.read()
 
+cmdclass = {
+    'install_scripts': install_symlinked_scripts,
+}
+
 setup(
     name = pkgname,
     version = version,
@@ -42,8 +48,8 @@ setup(
     packages = find_packages(),
     entry_points = {
         'console_scripts': [
-            'squid_dedup = squid_dedup.main:main',
-            'gen_openSUSE_dedups = squid_dedup.utils.gen_openSUSE_dedups:main',
+            'squid_dedup = squid_dedup.main',
+            'gen_openSUSE_dedups = squid_dedup.utils.gen_openSUSE_dedups',
         ],
     },
     include_package_data = True,
@@ -67,4 +73,5 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
     ],
+    cmdclass = cmdclass,
 )
