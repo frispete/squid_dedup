@@ -31,11 +31,11 @@ stored objects, even if using different URLs.
 Global configuration options are specified in the primary config file, which
 must exist. A template can be created with --extract in the current directory.
 
-Command line switches take precedence over config file settings.
-
 For additional _sections_, that specify arbitrary match/replacement values and
 some processing options, a list of config file globbing args is evaluated:
 %(_include_list)s.
+
+Command line switches take precedence over config file settings.
 
 By default, only errors and warnings are logged.
 Available log levels are: %(_loglevel_list)s
