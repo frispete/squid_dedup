@@ -240,7 +240,7 @@ def gen_openSUSE_dedups():
     return ret
 
 
-def main():
+if __name__ == '__main__':
     try:
         optlist, args = getopt.getopt(sys.argv[1:], 'hVvsfl:u:p:d:r:',
             ('help', 'version', 'verbose', 'syslog', 'logfile',
@@ -278,6 +278,3 @@ def main():
     setup_logging(gpar.loglevel, gpar.logfile, gpar.syslog)
 
     sys.exit(gen_openSUSE_dedups())
-
-if __name__ == '__main__':
-    main()
