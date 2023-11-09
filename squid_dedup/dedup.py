@@ -114,4 +114,7 @@ class Dedup:
                             open(self._protocol, 'a').write(line + '\n' + ' '.join(args) + '\n')
                         except IOError as e:
                             log.error('protocol logging error: %s', e)
+                else:
+                    log.error('sys.stdin.readline() is false. Ending the process.')
+                    break
         log.debug('finished')

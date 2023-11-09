@@ -90,7 +90,10 @@ class Main(object):
                 self.start_threads()
                 log.trace(self._config)
                 self._reload = False
-        log.info('finished')
+            if not self._threads[0][1].is_alive():
+               log.error('dedup thread terminated. Exiting')
+               self.shutdown()
+        log.info('finished (%s)', os.getpid())
         return ret
 
 
